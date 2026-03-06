@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-anthropic-sdk-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "advanced": "npx tsx src/advanced.ts",
+    "advanced:1": "npx tsx src/advanced.ts --invocation=1",
+    "advanced:2": "npx tsx src/advanced.ts --invocation=2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}

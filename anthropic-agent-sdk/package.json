@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-agent-sdk-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "chat-persistence": "npx tsx src/chat-persistence.ts",
+    "multi-agent": "npx tsx src/multi-agent-tracking.ts",
+    "audit": "npx tsx src/audit-logging.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
