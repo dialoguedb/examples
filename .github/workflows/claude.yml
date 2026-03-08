@@ -15,9 +15,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  claude:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      actions: read
+
+    steps:
+      - name: Generate bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.DIALOGUEDB_BOT_APP_ID }}
+          private-key: ${{ secrets.DIALOGUEDB_BOT_PRIVATE_KEY }}
+          owner: dialoguedb
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Run Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ steps.bot-token.outputs.token }}
+          allowed_bots: "dialoguedb-bot[bot]"
+          claude_args: |
+            --model claude-opus-4-6
+            --allowedTools "Read,Glob,Grep,Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
+            --max-turns 50
+          prompt: |
+            Review this PR. Check: 1) Does it compile? Run `npm install && npx tsc --noEmit` in the example directory. 2) README quality. 3) Code quality — real `dialogue-db` SDK usage. 4) .env.example with all required vars, no real keys. Be constructive.
+
+  interactive:
     if: |
-      github.event_name == 'pull_request' ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
@@ -68,4 +109,4 @@ jobs:
             --model claude-opus-4-6
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com)"
             --max-turns 50
-            --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify with npm install && npx tsc --noEmit in the example directory. When reviewing PRs, check: 1) Does it compile? 2) README quality — clear setup, runnable in under 2 minutes. 3) Code quality — real SDK usage, error handling, minimal boilerplate. 4) .env.example with all required vars, no real keys."
+            --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify with npm install && npx tsc --noEmit in the example directory."
