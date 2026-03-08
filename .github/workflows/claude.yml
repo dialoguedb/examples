@@ -57,6 +57,8 @@ jobs:
           prompt: |
             Review this PR. Check: 1) Does it compile? Run `npm install && npx tsc --noEmit` in the example directory. 2) README quality. 3) Code quality — real `dialogue-db` SDK usage. 4) .env.example with all required vars, no real keys. Be constructive.
 
+            Post your review as a PR comment using `gh pr comment`.
+
   interactive:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
