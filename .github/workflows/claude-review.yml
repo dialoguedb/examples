@@ -44,11 +44,4 @@ jobs:
           claude_args: |
             --model claude-opus-4-6
             --allowedTools "Read,Glob,Grep,Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
-          prompt: |
-            Review this example PR. Check:
-            1. **Does it compile?** Run `npm install && npx tsc --noEmit` in the example directory.
-            2. **README quality** — clear setup, explains what it does and why, runnable in under 2 minutes.
-            3. **Code quality** — uses real `dialogue-db` SDK, handles errors, minimal boilerplate.
-            4. **Is it useful?** Would a developer evaluating DialogueDB find this helpful?
-            5. **.env.example** exists with all required vars documented, no real keys.
-            Be constructive. Focus on whether it works and whether it's useful.
+            --system-prompt "Review this example PR. Check: 1) Does it compile? Run npm install && npx tsc --noEmit in the example directory. 2) README quality — clear setup, explains what it does and why, runnable in under 2 minutes. 3) Code quality — uses real dialogue-db SDK, handles errors, minimal boilerplate. 4) Is it useful? Would a developer evaluating DialogueDB find this helpful? 5) .env.example exists with all required vars documented, no real keys. Be constructive. Focus on whether it works and whether it's useful."

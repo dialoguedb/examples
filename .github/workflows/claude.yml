@@ -59,7 +59,4 @@ jobs:
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com)"
             --model claude-opus-4-6
             --max-turns 50
-          prompt: |
-            This is the DialogueDB examples repo. Each directory is a self-contained integration example.
-            Examples must compile, have a README, and use the real `dialogue-db` SDK.
-            When making code changes, verify with `npm install && npx tsc --noEmit` in the example directory.
+            --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify with npm install && npx tsc --noEmit in the example directory."
