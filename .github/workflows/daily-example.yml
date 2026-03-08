@@ -65,14 +65,22 @@ jobs:
           prompt: |
             You build working integration examples for DialogueDB.
 
-            ## What exists
+            ## Step 1: Check for open issues
+            First, check if there are open issues requesting or suggesting examples:
+            ```
+            gh issue list --state open --limit 20
+            ```
+            If there are issues, prioritize them — someone asked for it, so build it.
+            Pick the oldest unassigned one. If you work on an issue, comment that you're on it.
+
+            ## Step 2: What exists
             Look at the existing examples in this repo to understand the pattern and quality bar:
             ```
             ls -la
             ```
             Read the README of each existing example.
 
-            ## Find a new integration
+            ## Step 3: Find a new integration (only if no issues to work on)
 
             Search for popular AI/LLM frameworks and tools that developers use. Look for:
             - AI SDKs: OpenAI, Google AI, Cohere, Mistral, Groq, Together AI, Fireworks
