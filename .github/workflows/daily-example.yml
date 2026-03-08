@@ -1,0 +1,127 @@
+name: Daily Example
+
+on:
+  schedule:
+    - cron: '0 15 * * *'  # 3pm UTC / 10am EST daily
+  workflow_dispatch:
+
+jobs:
+  create-example:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Generate bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.DIALOGUEDB_BOT_APP_ID }}
+          private-key: ${{ secrets.DIALOGUEDB_BOT_PRIVATE_KEY }}
+          owner: dialoguedb
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.bot-token.outputs.token }}
+
+      - name: Configure git
+        env:
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
+        run: |
+          git config user.name "dialoguedb-bot[bot]"
+          git config user.email "dialoguedb-bot[bot]@users.noreply.github.com"
+          git config --global credential.helper store
+          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+
+      - name: Create working branch
+        id: branch
+        run: |
+          BRANCH_NAME="example/daily-${{ github.run_number }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Run Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ steps.bot-token.outputs.token }}
+          allowed_bots: "dialoguedb-bot[bot]"
+          display_report: "false"
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm init:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(gh pr create:*),Bash(gh pr list:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com),WebFetch(domain:npmjs.com),WebSearch"
+            --model claude-opus-4-6
+            --max-turns 75
+
+          prompt: |
+            You build working integration examples for DialogueDB.
+
+            ## What exists
+            Look at the existing examples in this repo to understand the pattern and quality bar:
+            ```
+            ls -la
+            ```
+            Read the README of each existing example.
+
+            ## Find a new integration
+
+            Search for popular AI/LLM frameworks and tools that developers use. Look for:
+            - AI SDKs: OpenAI, Google AI, Cohere, Mistral, Groq, Together AI, Fireworks
+            - Agent frameworks: LangChain, LlamaIndex, CrewAI, AutoGen, Semantic Kernel, Haystack
+            - Web frameworks: Next.js, Nuxt, SvelteKit, Express, Fastify, Hono
+            - Chat UI libraries: Vercel AI SDK, AI Chatbot UI, Chainlit, Streamlit
+            - Bot frameworks: Discord.js, Slack Bolt, Telegraf
+            - Other: MCP clients, RAG pipelines, voice assistants
+
+            Pick ONE that:
+            1. Doesn't already have an example in this repo
+            2. Is popular (check npm downloads, GitHub stars)
+            3. Has a natural conversation/chat use case where DialogueDB adds value
+            4. Would be genuinely useful to a developer evaluating DialogueDB
+
+            ## Read the SDK
+            Fetch the DialogueDB SDK docs to understand the real API:
+            ```
+            npm view dialogue-db readme
+            ```
+            Also fetch live product data:
+            - https://backend.dialoguedb.com/api/public/meta
+
+            ## Build it
+
+            Create a new directory: `<integration-name>/`
+
+            Every example MUST have:
+            - `package.json` with correct dependencies
+            - `src/` with working TypeScript code
+            - `.env.example` with required env vars (never real keys)
+            - `README.md` explaining: what it does, why you'd want it, setup steps, how to run
+            - `tsconfig.json`
+
+            The code must:
+            - Actually work (test with `npx tsx src/<file>.ts` or similar)
+            - Be minimal — show the pattern, not boilerplate
+            - Use real DialogueDB SDK imports (`dialogue-db`)
+            - Handle errors gracefully
+            - Include comments explaining the DialogueDB-specific parts
+
+            ## Quality check
+            - Install deps and verify the code compiles: `cd <dir> && npm install && npx tsc --noEmit`
+            - Would a developer star this? Would they share it?
+            - Is the README clear enough to get running in under 2 minutes?
+
+            ## Ship it
+            Branch: `${{ steps.branch.outputs.name }}`
+
+            1. Commit your example
+            2. Push the branch
+            3. Create a PR with a clear title and description of what the integration does
