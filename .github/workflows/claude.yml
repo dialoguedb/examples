@@ -10,6 +10,9 @@ on:
   pull_request_review:
     types: [submitted]
 
+env:
+  CLAUDE_MODEL: claude-opus-4-6
+
 jobs:
   review:
     if: github.event_name == 'pull_request'
@@ -50,7 +53,7 @@ jobs:
           github_token: ${{ steps.bot-token.outputs.token }}
           allowed_bots: "dialoguedb-bot[bot]"
           claude_args: |
-            --model claude-opus-4-6
+            --model ${{ env.CLAUDE_MODEL }}
             --allowedTools "Read,Glob,Grep,Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
             --max-turns 50
           prompt: |
@@ -110,7 +113,7 @@ jobs:
           github_token: ${{ steps.bot-token.outputs.token }}
           allowed_bots: "dialoguedb-bot[bot]"
           claude_args: |
-            --model claude-opus-4-6
+            --model ${{ env.CLAUDE_MODEL }}
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com)"
             --max-turns 50
             --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify with npm install && npx tsc --noEmit in the example directory."
