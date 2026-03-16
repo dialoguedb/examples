@@ -74,11 +74,14 @@ jobs:
             Pick the oldest unassigned one. If you work on an issue, comment that you're on it.
 
             ## Step 2: What exists
-            Look at the existing examples in this repo to understand the pattern and quality bar:
+            Look at the existing examples in this repo, open PRs, AND closed issues to avoid duplicates:
             ```
             ls -la
+            gh pr list --state open
+            gh issue list --state all --limit 30
             ```
             Read the README of each existing example.
+            **CRITICAL**: Do NOT create an example that already exists as a directory, as an open PR, or that was already attempted in a closed issue/PR. If there's an open PR for "Vercel AI SDK", that topic is taken — pick something else.
 
             ## Step 3: Find a new integration (only if no issues to work on)
 
@@ -91,7 +94,7 @@ jobs:
             - Other: MCP clients, RAG pipelines, voice assistants
 
             Pick ONE that:
-            1. Doesn't already have an example in this repo
+            1. Doesn't already exist as a directory, open PR, or past issue/PR
             2. Is popular (check npm downloads, GitHub stars)
             3. Has a natural conversation/chat use case where DialogueDB adds value
             4. Would be genuinely useful to a developer evaluating DialogueDB
