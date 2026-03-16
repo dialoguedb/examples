@@ -1,0 +1,24 @@
+{
+  "name": "dialoguedb-langchain-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "agent": "npx tsx src/agent-with-tools.ts",
+    "agent:1": "npx tsx src/agent-with-tools.ts --invocation=1",
+    "agent:2": "npx tsx src/agent-with-tools.ts --invocation=2"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "langchain": "^0.3.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
