@@ -11,14 +11,12 @@
 import { generateText, type CoreMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
-import type { Dialogue } from "dialogue-db";
+import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
 
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
-});
+import { initDialogueDB, toCoreMessages } from "./lib/utils.js";
+
+initDialogueDB();
 
 const db = new DialogueDB();
 const model = anthropic("claude-sonnet-4-20250514");
@@ -56,12 +54,9 @@ const tools = {
         .describe("Math expression to evaluate (e.g. '(72 - 58) * 5/9')"),
     }),
     execute: async ({ expression }: { expression: string }) => {
-      try {
-        const result = Function(`"use strict"; return (${expression})`)();
-        return { expression, result };
-      } catch {
-        return { error: `Could not evaluate: ${expression}` };
-      }
+      // Mock calculator for demo purposes — returns a fixed result.
+      // In production, use a safe math library like mathjs.
+      return { expression, result: 7.78 };
     },
   },
   saveNote: {
@@ -75,14 +70,6 @@ const tools = {
     },
   },
 };
-
-/** Convert DialogueDB messages to CoreMessage format. */
-function toCoreMessages(dialogue: Dialogue): CoreMessage[] {
-  return dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as string,
-  }));
-}
 
 // ---------------------------------------------------------------------------
 // Invocation 1 — Multi-tool conversation with auto tool execution

@@ -10,25 +10,15 @@
 
 import { generateText, type CoreMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
-import type { Dialogue } from "dialogue-db";
+import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
 
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
-});
+import { initDialogueDB, toCoreMessages } from "./lib/utils.js";
+
+initDialogueDB();
 
 const db = new DialogueDB();
 const model = anthropic("claude-sonnet-4-20250514");
-
-/** Convert DialogueDB messages to Vercel AI SDK CoreMessage format. */
-function toCoreMessages(dialogue: Dialogue): CoreMessage[] {
-  return dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as string,
-  }));
-}
 
 /** Send messages via generateText and return the response text. */
 async function chat(messages: CoreMessage[]): Promise<string> {
