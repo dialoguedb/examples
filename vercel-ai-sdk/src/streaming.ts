@@ -130,7 +130,7 @@ async function main() {
   console.log("Exchange 3 (streaming, after restart) — Claude:");
   const reply3 = await streamChat(toCoreMessages(resumed));
 
-  await dialogue.saveMessage({
+  await resumed.saveMessage({
     role: "assistant",
     content: reply3.text,
     metadata: {
@@ -142,7 +142,7 @@ async function main() {
   console.log(`  [${reply3.promptTokens} in, ${reply3.completionTokens} out]\n`);
 
   // 6. Summary
-  console.log(`Total messages persisted: ${resumed.messages.length + 2}`);
+  console.log(`Total messages persisted: ${resumed.messages.length}`);
   console.log(
     "Pattern: stream to client in real-time, persist to DialogueDB on completion."
   );
