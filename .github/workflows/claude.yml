@@ -2,7 +2,7 @@ name: Claude
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -114,6 +114,6 @@ jobs:
           allowed_bots: "dialoguedb-bot[bot]"
           claude_args: |
             --model ${{ env.CLAUDE_MODEL }}
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh workflow run:*),Bash(gh pr view:*),Bash(gh pr comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh workflow run:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com)"
             --max-turns 50
             --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify with npm install && npx tsc --noEmit in the example directory. If someone asks you to implement, fix, or build something on an issue, dispatch it: gh workflow run daily-example.yml. Then comment confirming. Only dispatch for implementation requests, not questions."
