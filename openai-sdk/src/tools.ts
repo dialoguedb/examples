@@ -79,6 +79,8 @@ export function executeTool(
 
     case "calculate": {
       try {
+        // ⚠️ Demo only — never eval untrusted input in production.
+        // Use a safe math parser (e.g. mathjs) for real applications.
         const result = Function(
           `"use strict"; return (${input.expression})`
         )();

@@ -54,11 +54,11 @@ function toOpenAIMessages(
     // Messages with tool_calls or tool role are stored as objects
     if (m.metadata?.hasToolCalls) {
       messages.push(
-        m.content as unknown as OpenAI.ChatCompletionAssistantMessageParam
+        m.content as OpenAI.ChatCompletionAssistantMessageParam
       );
     } else if (m.role === "tool") {
       messages.push(
-        m.content as unknown as OpenAI.ChatCompletionToolMessageParam
+        m.content as OpenAI.ChatCompletionToolMessageParam
       );
     } else {
       messages.push({
@@ -201,8 +201,11 @@ async function invocation1(): Promise<string> {
   );
   console.log(`\nGPT: ${reply}\n`);
 
-  // Persist agent state
+  // Persist agent state (re-include provider metadata since saveState overwrites)
   await dialogue.saveState({
+    provider: "openai",
+    format: "openai-chat",
+    model: MODEL,
     invocation: 1,
     completed: true,
     totalMessages: dialogue.messages.length,
@@ -242,8 +245,11 @@ async function invocation2(dialogueId: string) {
   const reply = await agentLoop(dialogue, followUp);
   console.log(`\nGPT: ${reply}\n`);
 
-  // Update state
+  // Update state (re-include provider metadata since saveState overwrites)
   await dialogue.saveState({
+    provider: "openai",
+    format: "openai-chat",
+    model: MODEL,
     invocation: 2,
     completed: true,
     totalMessages: dialogue.messages.length,
