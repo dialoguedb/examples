@@ -123,7 +123,7 @@ async function agentLoop(
           role: "assistant",
           content: assistantMessage.content,
           tool_calls: assistantMessage.tool_calls,
-        } as unknown as string,
+        },
         metadata: {
           hasToolCalls: true,
           prompt_tokens: response.usage?.prompt_tokens ?? 0,
@@ -166,7 +166,7 @@ async function agentLoop(
             role: "tool",
             tool_call_id: toolCall.id,
             content: result,
-          } as unknown as string,
+          },
         });
       }
     }
