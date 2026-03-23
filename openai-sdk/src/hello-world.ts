@@ -50,7 +50,10 @@ async function main() {
   console.log("=== DialogueDB + OpenAI SDK: Hello World ===\n");
 
   // 1. Create a new conversation
-  const dialogue = await db.createDialogue({ label: "openai-hello-world" });
+  const dialogue = await db.createDialogue({
+    label: "openai-hello-world",
+    state: { provider: "openai", format: "openai-chat", model: MODEL },
+  });
   console.log(`Created dialogue: ${dialogue.id}\n`);
 
   // 2. First exchange - establish some memorable context

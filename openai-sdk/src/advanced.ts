@@ -182,7 +182,13 @@ async function invocation1(): Promise<string> {
 
   const dialogue = await db.createDialogue({
     label: "openai-advanced-demo",
-    state: { invocation: 1, started: new Date().toISOString() },
+    state: {
+      provider: "openai",
+      format: "openai-chat",
+      model: MODEL,
+      invocation: 1,
+      started: new Date().toISOString(),
+    },
   });
   console.log(`Created dialogue: ${dialogue.id}\n`);
 
