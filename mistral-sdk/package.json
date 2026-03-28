@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-mistral-sdk-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "tool-use": "npx tsx src/tool-use.ts",
+    "tool-use:1": "npx tsx src/tool-use.ts --invocation=1",
+    "tool-use:2": "npx tsx src/tool-use.ts --invocation=2"
+  },
+  "dependencies": {
+    "@mistralai/mistralai": "^1.5.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
