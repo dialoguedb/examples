@@ -1,0 +1,20 @@
+{
+  "name": "dialoguedb-slack-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/bot.ts",
+    "dev": "npx tsx watch src/bot.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@slack/bolt": "^4.1.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
