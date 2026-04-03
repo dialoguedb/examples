@@ -1,0 +1,20 @@
+{
+  "name": "dialoguedb-fastify-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx tsx src/server.ts",
+    "demo": "npx tsx src/demo.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
