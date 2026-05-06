@@ -1,8 +1,8 @@
 name: Daily Example
 
 on:
-  schedule:
-    - cron: '0 15 * * *'  # 3pm UTC / 10am EST daily
+  # schedule:
+    # - cron: '0 15 * * *'  # 3pm UTC / 10am EST daily
   workflow_dispatch:
 
 jobs:
