@@ -1,0 +1,22 @@
+{
+  "name": "dialoguedb-vercel-ai-sdk-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "tool-calling": "npx tsx src/tool-calling.ts",
+    "streaming": "npx tsx src/streaming.ts"
+  },
+  "dependencies": {
+    "ai": "^4.3.0",
+    "@ai-sdk/anthropic": "^1.2.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
