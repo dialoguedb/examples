@@ -10,8 +10,10 @@ on:
         description: 'Topic to build an example around (e.g. "RAG chatbot that remembers users across sessions", "voice agent that resumes interrupted calls"). Leave blank to auto-pick from issues or trending integrations.'
         required: false
         default: ''
-  # Fired by a downstream repo (SDK, backend) when it ships a feature release.
-  # client_payload: { source, version, feature }. See client/backend notify-hq.yml.
+  # Fired by HQ's release-content.yml when a downstream repo (SDK, backend) ships
+  # a feature release. client_payload: { source, version, feature }. The downstream
+  # repos emit the existing `deployment` event to HQ; HQ routes it here. They never
+  # dispatch to this repo directly.
   repository_dispatch:
     types: [new-feature]
 
