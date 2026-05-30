@@ -1,6 +1,8 @@
 name: Notify HQ
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
   issues:
@@ -58,4 +60,31 @@ jobs:
           jq -n --arg repo "$REPO" --arg url "$ISSUE_URL" --arg hq "$HQ_NUM" '{
             event_type: "issue-closed",
             client_payload: { source: $repo, issue_url: $url, hq_issue: $hq }
+          }' | gh api repos/dialoguedb/hq/dispatches --input -
+
+  # Report to HQ when main changes so HQ's video-content workflow can generate
+  # YouTube scripts for any newly merged example. examples stays thin — it just
+  # forwards the push SHAs; HQ figures out which examples need scripts.
+  notify-examples-updated:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.DIALOGUEDB_BOT_APP_ID }}
+          private-key: ${{ secrets.DIALOGUEDB_BOT_PRIVATE_KEY }}
+          owner: dialoguedb
+          repositories: hq
+
+      - name: Notify HQ that examples changed
+        env:
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          jq -n --arg before "$BEFORE" --arg after "$AFTER" '{
+            event_type: "examples-updated",
+            client_payload: { before: $before, after: $after }
           }' | gh api repos/dialoguedb/hq/dispatches --input -
