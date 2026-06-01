@@ -73,9 +73,9 @@ jobs:
           allowed_bots: "dialoguedb-bot[bot]"
           display_report: "false"
           claude_args: |
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm init:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(gh pr create:*),Bash(gh pr list:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com),WebFetch(domain:npmjs.com),WebSearch"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm init:*),Bash(npm install:*),Bash(npm run:*),Bash(npm view:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com),WebFetch(domain:npmjs.com),WebSearch"
             --model ${{ env.CLAUDE_MODEL }}
-            --max-turns 75
+            --max-turns 100
 
           prompt: |
             You build working integration examples for DialogueDB.
