@@ -54,7 +54,7 @@ jobs:
           allowed_bots: "dialoguedb-bot[bot]"
           claude_args: |
             --model ${{ env.CLAUDE_MODEL }}
-            --allowedTools "Read,Glob,Grep,Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
+            --allowedTools "Read,Glob,Grep,Bash(cd:*),Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
             --max-turns 50
           prompt: |
             Review this PR. Check: 1) Does it compile? Run `npm install && npx tsc --noEmit` in the example directory. 2) README quality. 3) Code quality — real `dialogue-db` SDK usage. 4) .env.example with all required vars, no real keys. Be constructive.
