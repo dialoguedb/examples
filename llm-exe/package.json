@@ -1,0 +1,20 @@
+{
+  "name": "dialoguedb-llm-exe-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "chatbot": "npx tsx src/chatbot.ts",
+    "chatbot:1": "npx tsx src/chatbot.ts --invocation=1",
+    "chatbot:2": "npx tsx src/chatbot.ts --invocation=2"
+  },
+  "dependencies": {
+    "llm-exe": "^2.3.10",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
