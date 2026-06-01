@@ -62,9 +62,7 @@ jobs:
             client_payload: { source: $repo, issue_url: $url, hq_issue: $hq }
           }' | gh api repos/dialoguedb/hq/dispatches --input -
 
-  # Report to HQ when main changes so HQ's video-content workflow can generate
-  # YouTube scripts for any newly merged example. examples stays thin — it just
-  # forwards the push SHAs; HQ figures out which examples need scripts.
+  # Emit to HQ when main changes.
   notify-examples-updated:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
