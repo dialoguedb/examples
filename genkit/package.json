@@ -1,0 +1,20 @@
+{
+  "name": "dialoguedb-genkit-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "flow": "npx tsx src/flow.ts"
+  },
+  "dependencies": {
+    "genkit": "^1.36.0",
+    "@genkit-ai/google-genai": "^1.36.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
