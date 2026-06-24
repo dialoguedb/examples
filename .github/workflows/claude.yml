@@ -100,13 +100,13 @@ jobs:
         run: |
           case "$EVENT" in
             issue_comment)
-              gh api "repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" -f content=eyes || true
+              gh api "repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" -f content=eyes || echo "::warning::reaction failed for $EVENT"
               ;;
             pull_request_review_comment)
-              gh api "repos/${REPO}/pulls/comments/${COMMENT_ID}/reactions" -f content=eyes || true
+              gh api "repos/${REPO}/pulls/comments/${COMMENT_ID}/reactions" -f content=eyes || echo "::warning::reaction failed for $EVENT"
               ;;
             pull_request_review)
-              gh api "repos/${REPO}/pulls/${PR_NUMBER}/reviews/${REVIEW_ID}/reactions" -f content=eyes || true
+              gh api "repos/${REPO}/issues/${PR_NUMBER}/reactions" -f content=eyes || echo "::warning::reaction failed for pull_request_review #${PR_NUMBER}"
               ;;
           esac
 
