@@ -86,6 +86,30 @@ jobs:
           private-key: ${{ secrets.DIALOGUEDB_BOT_PRIVATE_KEY }}
           owner: dialoguedb
 
+      # Acknowledge the @claude trigger immediately with a 👀 reaction so the
+      # human knows the assistant picked it up. Runs before checkout (which
+      # can take 30+ seconds) so the eyes appear fast.
+      - name: React with eyes
+        env:
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          REVIEW_ID: ${{ github.event.review.id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          case "$EVENT" in
+            issue_comment)
+              gh api "repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" -f content=eyes || true
+              ;;
+            pull_request_review_comment)
+              gh api "repos/${REPO}/pulls/comments/${COMMENT_ID}/reactions" -f content=eyes || true
+              ;;
+            pull_request_review)
+              gh api "repos/${REPO}/pulls/${PR_NUMBER}/reviews/${REVIEW_ID}/reactions" -f content=eyes || true
+              ;;
+          esac
+
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
