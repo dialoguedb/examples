@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-twilio-sms",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/server.ts",
+    "dev": "npx tsx watch src/server.ts"
+  },
+  "dependencies": {
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.0",
+    "openai": "^4.78.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
