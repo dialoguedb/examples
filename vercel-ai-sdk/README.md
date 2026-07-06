@@ -41,8 +41,15 @@ export function toStoredMessages(messages: UIMessage[]) {
   return messages.map((m) => ({ role: m.role, content: m.parts }));
 }
 
-export function fromStoredMessages(rows) {
-  return rows.map((r) => ({ id: r.id, role: r.role, parts: r.content }));
+// On load, validateUIMessages parses the stored rows back into typed UIMessages,
+// so there is no casting at the storage boundary.
+export async function loadUIMessages(db, id, namespace) {
+  const dialogue = await db.getDialogue(id, { namespace });
+  if (!dialogue) return [];
+  await dialogue.loadMessages({ order: "asc" });
+  return validateUIMessages({
+    messages: dialogue.messages.map((m) => ({ id: m.id, role: m.role, parts: m.content })),
+  });
 }
 ```
 

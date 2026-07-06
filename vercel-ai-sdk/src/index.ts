@@ -13,7 +13,19 @@ import { toStoredMessages, loadUIMessages } from "./persist";
  * history survives a restart when it lives in DialogueDB.
  */
 
-const db = new DialogueDB({ apiKey: process.env.DIALOGUE_DB_API_KEY || "" });
+const dialogueDbApiKey = process.env.DIALOGUE_DB_API_KEY;
+if (!dialogueDbApiKey) {
+  throw new Error(
+    "Missing DIALOGUE_DB_API_KEY. Copy .env.example to .env and add your key.",
+  );
+}
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error(
+    "Missing OPENAI_API_KEY. Copy .env.example to .env and add your key.",
+  );
+}
+
+const db = new DialogueDB({ apiKey: dialogueDbApiKey });
 const NAMESPACE = "user_demo";
 const model = openai("gpt-4o-mini");
 
@@ -33,7 +45,7 @@ async function runTurn(
   const dialogue = await db.getOrCreateDialogue({ id: dialogueId, namespace: NAMESPACE });
 
   // 1. Persist the incoming user turn.
-  await dialogue.saveMessages(toStoredMessages([userMessage]) as never);
+  await dialogue.saveMessages(toStoredMessages([userMessage]));
 
   // 2. Run the model on the full history. convertToModelMessages is async in v7.
   const result = streamText({
@@ -52,14 +64,14 @@ async function runTurn(
   await response.text(); // drain the stream so onFinish runs
 
   // 4. Persist the new assistant message(s): everything past the original list.
-  await dialogue.saveMessages(toStoredMessages(finalMessages.slice(incoming.length)) as never);
+  await dialogue.saveMessages(toStoredMessages(finalMessages.slice(incoming.length)));
 
   return finalMessages;
 }
 
 function line(m: UIMessage): string {
   const text = m.parts
-    .map((p) => (p.type === "text" && "text" in p ? p.text : `[${p.type}]`))
+    .map((p) => (p.type === "text" ? p.text : `[${p.type}]`))
     .join(" ")
     .trim();
   return `  ${m.role}: ${text.slice(0, 90)}`;
