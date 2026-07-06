@@ -1,0 +1,19 @@
+{
+  "name": "dialoguedb-vercel-ai-sdk-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.5",
+    "ai": "^7.0.11",
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
