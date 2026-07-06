@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "npx tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.5",
@@ -13,6 +15,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "prettier": "^3.4.2",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

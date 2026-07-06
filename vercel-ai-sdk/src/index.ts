@@ -42,7 +42,10 @@ async function runTurn(
   };
   const incoming = [...history, userMessage];
 
-  const dialogue = await db.getOrCreateDialogue({ id: dialogueId, namespace: NAMESPACE });
+  const dialogue = await db.getOrCreateDialogue({
+    id: dialogueId,
+    namespace: NAMESPACE,
+  });
 
   // 1. Persist the incoming user turn.
   await dialogue.saveMessages(toStoredMessages([userMessage]));
@@ -64,7 +67,9 @@ async function runTurn(
   await response.text(); // drain the stream so onFinish runs
 
   // 4. Persist the new assistant message(s): everything past the original list.
-  await dialogue.saveMessages(toStoredMessages(finalMessages.slice(incoming.length)));
+  await dialogue.saveMessages(
+    toStoredMessages(finalMessages.slice(incoming.length)),
+  );
 
   return finalMessages;
 }
@@ -82,7 +87,11 @@ async function main(): Promise<void> {
   console.log(`Dialogue: ${dialogueId} (namespace: ${NAMESPACE})\n`);
 
   console.log("Turn 1:");
-  const afterTurn1 = await runTurn(dialogueId, [], "In one word, what does DialogueDB store?");
+  const afterTurn1 = await runTurn(
+    dialogueId,
+    [],
+    "In one word, what does DialogueDB store?",
+  );
   console.log(afterTurn1.map(line).join("\n"), "\n");
 
   // Cold reload, as a fresh process or page load would do.
@@ -91,11 +100,17 @@ async function main(): Promise<void> {
   console.log(reloaded.map(line).join("\n"), "\n");
 
   console.log("Turn 2 (continued from the reloaded history):");
-  const afterTurn2 = await runTurn(dialogueId, reloaded, "And in one word, why does that matter?");
+  const afterTurn2 = await runTurn(
+    dialogueId,
+    reloaded,
+    "And in one word, why does that matter?",
+  );
   console.log(afterTurn2.map(line).join("\n"));
 
   await db.deleteDialogue(dialogueId, { namespace: NAMESPACE });
-  console.log("\nCleaned up. The conversation round-tripped as UI messages across a cold reload.");
+  console.log(
+    "\nCleaned up. The conversation round-tripped as UI messages across a cold reload.",
+  );
 }
 
 main().catch((error) => {

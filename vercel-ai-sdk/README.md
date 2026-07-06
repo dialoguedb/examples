@@ -48,7 +48,11 @@ export async function loadUIMessages(db, id, namespace) {
   if (!dialogue) return [];
   await dialogue.loadMessages({ order: "asc" });
   return validateUIMessages({
-    messages: dialogue.messages.map((m) => ({ id: m.id, role: m.role, parts: m.content })),
+    messages: dialogue.messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      parts: m.content,
+    })),
   });
 }
 ```
@@ -70,10 +74,15 @@ const db = new DialogueDB();
 export async function POST(req: Request) {
   const { messages, dialogueId, userId } = await req.json();
 
-  const dialogue = await db.getOrCreateDialogue({ id: dialogueId, namespace: userId });
+  const dialogue = await db.getOrCreateDialogue({
+    id: dialogueId,
+    namespace: userId,
+  });
 
   // persist the incoming user turn
-  await dialogue.saveMessages(toStoredMessages([messages[messages.length - 1]]));
+  await dialogue.saveMessages(
+    toStoredMessages([messages[messages.length - 1]]),
+  );
 
   const result = streamText({
     model: openai("gpt-4o"),
@@ -84,7 +93,9 @@ export async function POST(req: Request) {
     originalMessages: messages,
     onFinish: async ({ messages: updated }) => {
       // persist the new assistant message(s)
-      await dialogue.saveMessages(toStoredMessages(updated.slice(messages.length)));
+      await dialogue.saveMessages(
+        toStoredMessages(updated.slice(messages.length)),
+      );
     },
   });
 }
@@ -102,7 +113,9 @@ const db = new DialogueDB();
 
 export default async function Page({ params }: { params: { id: string } }) {
   const messages = await loadUIMessages(db, params.id, /* userId */ "user_123");
-  return <Chat dialogueId={params.id} userId="user_123" initialMessages={messages} />;
+  return (
+    <Chat dialogueId={params.id} userId="user_123" initialMessages={messages} />
+  );
 }
 ```
 
