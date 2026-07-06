@@ -54,12 +54,19 @@ jobs:
           allowed_bots: "dialoguedb-bot[bot]"
           claude_args: |
             --model ${{ env.CLAUDE_MODEL }}
-            --allowedTools "Read,Glob,Grep,Bash(cd:*),Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
-            --max-turns 50
+            --allowedTools "Read,Glob,Grep,Bash(ls:*),Bash(cat:*),Bash(pwd:*),Bash(find:*),Bash(cd:*),Bash(npm install:*),Bash(npx tsc:*),Bash(node:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
+            --max-turns 60
           prompt: |
-            Review this PR. Check: 1) Does it compile? Run `npm install && npx tsc --noEmit` in the example directory. 2) README quality. 3) Code quality — real `dialogue-db` SDK usage. 4) .env.example with all required vars, no real keys. Be constructive.
+            Review this PR. Check: 1) Does it compile? 2) README quality. 3) Code quality — real `dialogue-db` SDK usage per the CLAUDE.md standards (no `any`, no type casting, no `@ts-ignore`, cleanup after itself). 4) .env.example with all required vars, no real keys. Be constructive.
 
-            Post your review as a PR comment using `gh pr comment`.
+            Compile-check protocol — run each command as a SEPARATE tool call. Do NOT chain with `&&`. The tool allowlist matches the leading command token, so `cd X && npm install` matches neither `Bash(cd:*)` nor `Bash(npm install:*)` and gets denied, burning turns for nothing. Correct sequence:
+
+            1. Find the example directory: `gh pr diff --name-only` and read the first path segment.
+            2. `cd <example-dir>` — separate call.
+            3. `npm install` — separate call.
+            4. `npx tsc --noEmit` — separate call.
+
+            When you have your findings, post ONE PR comment using `gh pr comment`: a short verdict line (LGTM / needs changes / questions), then, if not clean, a bulleted list where each bullet cites file + concern (`vercel-ai-sdk/src/index.ts:42 — <issue>`). No inline review comments.
 
   interactive:
     if: |
@@ -116,4 +123,4 @@ jobs:
             --model ${{ env.CLAUDE_MODEL }}
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(mkdir:*),Bash(node:*),Bash(npm install:*),Bash(npm run:*),Bash(npx:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh workflow run:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr comment:*),WebFetch(domain:backend.dialoguedb.com),WebFetch(domain:docs.dialoguedb.com),WebFetch(domain:www.npmjs.com)"
             --max-turns 50
-            --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify with npm install && npx tsc --noEmit in the example directory. If someone asks you to implement, fix, or build something on an issue, dispatch it: gh workflow run daily-example.yml. Then comment confirming. Only dispatch for implementation requests, not questions."
+            --system-prompt "This is the DialogueDB examples repo. Each directory is a self-contained integration example. Examples must compile, have a README, and use the real dialogue-db SDK. When making code changes, verify by running `cd <example-dir>`, then `npm install`, then `npx tsc --noEmit` as SEPARATE tool calls — do not chain with && or the allowlist denies them. If someone asks you to implement, fix, or build something on an issue, dispatch it via gh workflow run daily-example.yml, then comment confirming. Only dispatch for implementation requests, not questions."
