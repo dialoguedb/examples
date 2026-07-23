@@ -19,7 +19,7 @@ import { conversationStore } from "./persist";
  * Turn 2 runs against a cold reload, so what the agent recalls came back from
  * DialogueDB rather than from anything still in this process.
  *
- * Run it: npm run agents
+ * Run it: npm start
  */
 
 const dialogueDbApiKey = process.env.DIALOGUE_DB_API_KEY;

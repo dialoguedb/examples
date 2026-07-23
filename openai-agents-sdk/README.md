@@ -44,7 +44,7 @@ export function fromStoredMessages(
 }
 ```
 
-See [`persist.ts`](./persist.ts). That file is the whole integration.
+See [`persist.ts`](./src/persist.ts). That file is the whole integration.
 
 ## Multi-user isolation
 
@@ -65,7 +65,7 @@ cp .env.example .env
 ## Run
 
 ```bash
-npm run agents
+npm start
 ```
 
 You will see turn 1 make two real tool calls, a cold reload from DialogueDB
