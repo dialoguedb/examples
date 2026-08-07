@@ -26,15 +26,20 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
   private dialogue: Dialogue | null = null;
   private dialogueId: string | null;
   private label: string;
+  private namespace: string | undefined;
 
   /**
    * @param opts.dialogueId - Resume an existing dialogue. If omitted, a new one is created.
    * @param opts.label - Label for new dialogues (ignored when resuming).
+   * @param opts.namespace - Isolates this history to one user, tenant, or workspace.
+   *   Threaded through every DialogueDB call so nothing leaks across namespaces.
+   *   Omit for the default namespace.
    */
-  constructor(opts: { dialogueId?: string; label?: string } = {}) {
+  constructor(opts: { dialogueId?: string; label?: string; namespace?: string } = {}) {
     super();
     this.dialogueId = opts.dialogueId ?? null;
     this.label = opts.label ?? "langchain-session";
+    this.namespace = opts.namespace;
   }
 
   /** Ensure the dialogue is loaded/created. */
@@ -42,11 +47,11 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
     if (this.dialogue) return this.dialogue;
 
     if (this.dialogueId) {
-      const d = await this.db.getDialogue(this.dialogueId);
+      const d = await this.db.getDialogue(this.dialogueId, { namespace: this.namespace });
       if (!d) throw new Error(`Dialogue ${this.dialogueId} not found`);
       this.dialogue = d;
     } else {
-      this.dialogue = await this.db.createDialogue({ label: this.label });
+      this.dialogue = await this.db.createDialogue({ label: this.label, namespace: this.namespace });
       this.dialogueId = this.dialogue.id;
     }
 
@@ -97,7 +102,7 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
   /** Clear all messages by deleting and recreating the dialogue. */
   async clear(): Promise<void> {
     if (this.dialogueId) {
-      await this.db.deleteDialogue(this.dialogueId);
+      await this.db.deleteDialogue(this.dialogueId, { namespace: this.namespace });
     }
     this.dialogue = null;
     this.dialogueId = null;
