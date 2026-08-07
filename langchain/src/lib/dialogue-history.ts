@@ -25,12 +25,16 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
   private db = new DialogueDB();
   private dialogue: Dialogue | null = null;
   private dialogueId: string | null;
-  private label: string;
+  private label: string | undefined;
   private namespace: string | undefined;
 
   /**
-   * @param opts.dialogueId - Resume an existing dialogue. If omitted, a new one is created.
-   * @param opts.label - Label for new dialogues (ignored when resuming).
+   * @param opts.dialogueId - The dialogue (session) id. Resumed if it already
+   *   exists, created if it does not, so a caller-supplied session id works on
+   *   the first turn and every turn after. If omitted, a new dialogue is
+   *   created and its id is available from getDialogueId() after first use.
+   * @param opts.label - Optional label for a newly created dialogue (when no
+   *   dialogueId is given). Ignored when a dialogueId is supplied.
    * @param opts.namespace - Isolates this history to one user, tenant, or workspace.
    *   Threaded through every DialogueDB call so nothing leaks across namespaces.
    *   Omit for the default namespace.
@@ -38,7 +42,7 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
   constructor(opts: { dialogueId?: string; label?: string; namespace?: string } = {}) {
     super();
     this.dialogueId = opts.dialogueId ?? null;
-    this.label = opts.label ?? "langchain-session";
+    this.label = opts.label;
     this.namespace = opts.namespace;
   }
 
@@ -47,13 +51,19 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
     if (this.dialogue) return this.dialogue;
 
     if (this.dialogueId) {
-      const d = await this.db.getDialogue(this.dialogueId, { namespace: this.namespace });
-      if (!d) throw new Error(`Dialogue ${this.dialogueId} not found`);
-      this.dialogue = d;
+      // Resume the session if it exists, create it if not, keyed by the id.
+      this.dialogue = await this.db.getOrCreateDialogue({
+        id: this.dialogueId,
+        namespace: this.namespace,
+      });
     } else {
-      this.dialogue = await this.db.createDialogue({ label: this.label, namespace: this.namespace });
-      this.dialogueId = this.dialogue.id;
+      // No id supplied: create a fresh dialogue, optionally labelled.
+      this.dialogue = await this.db.createDialogue({
+        label: this.label,
+        namespace: this.namespace,
+      });
     }
+    this.dialogueId = this.dialogue.id;
 
     return this.dialogue;
   }
