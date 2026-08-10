@@ -74,6 +74,23 @@ const memory = new BufferMemory({ chatHistory: history, returnMessages: true });
 // Use with any chain or agent
 ```
 
+Constructor options:
+
+| Option | Purpose |
+| --- | --- |
+| `dialogueId` | Resume an existing conversation. Created on first use if it doesn't exist yet, so the same ID works for a new and a returning session. |
+| `namespace` | Isolate one tenant or user's dialogues from another's. Threaded through every read and write. |
+| `label` | Human-readable name, used when no `dialogueId` is given. |
+
+Key a session by user and conversation to keep tenants separate:
+
+```typescript
+const history = new DialogueChatHistory({
+  dialogueId: conversationId,
+  namespace: `user-${userId}`,
+});
+```
+
 ## Project Structure
 
 ```
