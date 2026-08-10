@@ -79,7 +79,11 @@ export class DialogueChatHistory extends BaseListChatMessageHistory {
     await dialogue.loadMessages({ order: "asc" });
 
     return dialogue.messages.map((m) => {
-      const content = m.content as string;
+      // DialogueDB content is string | Record | Record[]. A dialogue is shared
+      // across SDKs, so structured content written elsewhere shows up here.
+      // LangChain reads a non-string argument as BaseMessageFields, which would
+      // silently leave content undefined, so serialize it the way addMessage does.
+      const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
       switch (m.role) {
         case "user":
           return new HumanMessage(content);
