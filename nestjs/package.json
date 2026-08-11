@@ -1,0 +1,24 @@
+{
+  "name": "dialoguedb-nestjs-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/main.ts",
+    "demo": "npx tsx src/demo.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/platform-express": "^10.4.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
