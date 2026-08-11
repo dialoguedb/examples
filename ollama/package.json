@@ -1,0 +1,19 @@
+{
+  "name": "dialoguedb-ollama-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "streaming": "npx tsx src/streaming.ts"
+  },
+  "dependencies": {
+    "ollama": "^0.5.11",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
