@@ -1,0 +1,19 @@
+{
+  "name": "dialoguedb-aws-lambda",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "npx tsx src/demo.ts"
+  },
+  "dependencies": {
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
