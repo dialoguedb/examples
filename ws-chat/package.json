@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-ws-chat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "server": "npx tsx src/server.ts",
+    "client": "npx tsx src/client.ts"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "openai": "^4.77.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
