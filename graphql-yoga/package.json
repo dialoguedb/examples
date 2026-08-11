@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-graphql-yoga-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx tsx src/server.ts",
+    "demo": "npx tsx src/demo.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.7",
+    "graphql": "^16.9.0",
+    "graphql-yoga": "^5.21.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
