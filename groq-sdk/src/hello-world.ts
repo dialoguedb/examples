@@ -16,12 +16,19 @@ import "dotenv/config";
 
 setGlobalConfig({
   apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
+  // Defaults to https://api.dialoguedb.com when unset.
+  ...(process.env.DIALOGUEDB_ENDPOINT
+    ? { endpoint: process.env.DIALOGUEDB_ENDPOINT }
+    : {}),
 });
 
 const groq = new Groq();
 const db = new DialogueDB();
 const MODEL = "llama-3.3-70b-versatile";
+
+// Scope every read and write to one user's namespace. Two users running the
+// same code never see each other's dialogues.
+const NAMESPACE = process.env.DIALOGUEDB_NAMESPACE ?? "groq-demo-user";
 
 /** Send a message array to Groq, return the text response. */
 async function chat(
@@ -53,6 +60,7 @@ async function main() {
   // 1. Create a new conversation
   const dialogue = await db.createDialogue({
     label: "groq-hello-world",
+    namespace: NAMESPACE,
     state: { provider: "groq", format: "openai-chat", model: MODEL },
   });
   console.log(`Created dialogue: ${dialogue.id}\n`);
@@ -79,7 +87,7 @@ async function main() {
 
   // 4. COLD RESTART - load the conversation fresh from DialogueDB
   console.log("--- Simulating cold restart ---\n");
-  const resumed = await db.getDialogue(dialogue.id);
+  const resumed = await db.getDialogue(dialogue.id, { namespace: NAMESPACE });
   if (!resumed) throw new Error("Failed to load dialogue");
   await resumed.loadMessages({ order: "asc" });
   console.log(`Loaded ${resumed.messages.length} messages from DialogueDB\n`);
@@ -107,7 +115,7 @@ async function main() {
   console.log(`Total messages persisted: ${resumed.messages.length}`);
 
   // Cleanup
-  await db.deleteDialogue(dialogue.id);
+  await db.deleteDialogue(dialogue.id, { namespace: NAMESPACE });
   console.log("\nCleaned up. Done!");
 }
 

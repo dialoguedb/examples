@@ -21,63 +21,28 @@ import type {
 import { DialogueDB, setGlobalConfig } from "dialogue-db";
 import type { Dialogue } from "dialogue-db";
 import { tools, executeTool } from "./tools.js";
+import { toGroqMessages } from "./format.js";
 import "dotenv/config";
 
 setGlobalConfig({
   apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
+  // Defaults to https://api.dialoguedb.com when unset.
+  ...(process.env.DIALOGUEDB_ENDPOINT
+    ? { endpoint: process.env.DIALOGUEDB_ENDPOINT }
+    : {}),
 });
 
 const groq = new Groq();
 const db = new DialogueDB();
 const MODEL = "llama-3.3-70b-versatile";
 
-const SYSTEM_PROMPT =
-  "You are a helpful assistant with access to tools. Use them when needed to answer questions accurately. Be concise.";
+// Scope every read and write to one user's namespace. Two users running the
+// same code never see each other's dialogues.
+const NAMESPACE = process.env.DIALOGUEDB_NAMESPACE ?? "groq-demo-user";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Convert DialogueDB messages to Groq format.
- *
- * DialogueDB stores messages as { role, content, metadata }. Groq's API
- * needs specific shapes for assistant messages with tool_calls and for
- * tool-role messages. We store the full Groq message shape in content
- * so we can reconstruct it exactly.
- */
-function toGroqMessages(dialogue: Dialogue): ChatCompletionMessageParam[] {
-  const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-  ];
-
-  for (const m of dialogue.messages) {
-    // Messages with tool_calls or tool role store the full provider message shape
-    // in DialogueDB's content field (which accepts string | object | array).
-    // We reconstruct the exact Groq message shape from the stored object.
-    const c = m.content;
-    if (m.metadata?.hasToolCalls && typeof c === "object" && "tool_calls" in c) {
-      messages.push({
-        role: "assistant",
-        content: "content" in c ? String(c.content) : null,
-        tool_calls: c.tool_calls,
-      });
-    } else if (m.role === "tool" && typeof c === "object" && "tool_call_id" in c) {
-      messages.push({
-        role: "tool",
-        tool_call_id: String(c.tool_call_id),
-        content: String(c.content),
-      });
-    } else if (m.role === "user") {
-      messages.push({ role: "user", content: String(m.content) });
-    } else {
-      messages.push({ role: "assistant", content: String(m.content) });
-    }
-  }
-
-  return messages;
-}
 
 /** Extract text from a Groq response. */
 function extractText(response: ChatCompletion): string {
@@ -147,34 +112,40 @@ async function agentLoop(
       });
     }
 
-    // Done?
-    if (choice.finish_reason === "stop") {
+    // Only a tool_calls round continues the loop. Anything else (stop, length,
+    // content_filter) must terminate, or the loop resends the same messages
+    // forever.
+    if (choice.finish_reason !== "tool_calls" || !assistantMessage.tool_calls) {
       return extractText(response);
     }
 
-    // Handle tool calls
-    if (
-      choice.finish_reason === "tool_calls" &&
-      assistantMessage.tool_calls
-    ) {
-      for (const toolCall of assistantMessage.tool_calls) {
-        const args = JSON.parse(toolCall.function.arguments);
+    for (const toolCall of assistantMessage.tool_calls) {
+      // arguments is model-generated JSON; feed a parse failure back as the
+      // tool result so the model can retry instead of crashing the run.
+      let result: string;
+      try {
+        const args = JSON.parse(toolCall.function.arguments) as Record<
+          string,
+          unknown
+        >;
         console.log(
           `   [tool] ${toolCall.function.name}(${JSON.stringify(args)})`
         );
-        const result = executeTool(toolCall.function.name, args);
-        console.log(`   [result] ${result}`);
-
-        // Store tool result as the full Groq tool message shape
-        await dialogue.saveMessage({
-          role: "tool",
-          content: {
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: result,
-          },
-        });
+        result = executeTool(toolCall.function.name, args);
+      } catch {
+        result = JSON.stringify({ error: "Malformed tool arguments" });
       }
+      console.log(`   [result] ${result}`);
+
+      // Store tool result as the full Groq tool message shape
+      await dialogue.saveMessage({
+        role: "tool",
+        content: {
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: result,
+        },
+      });
     }
   }
 }
@@ -188,6 +159,7 @@ async function invocation1(): Promise<string> {
 
   const dialogue = await db.createDialogue({
     label: "groq-advanced-demo",
+    namespace: NAMESPACE,
     state: {
       provider: "groq",
       format: "openai-chat",
@@ -236,7 +208,7 @@ async function invocation2(dialogueId: string) {
 
   // Load conversation fresh from DialogueDB (simulates a new process)
   console.log(`Loading dialogue ${dialogueId} from scratch...`);
-  const dialogue = await db.getDialogue(dialogueId);
+  const dialogue = await db.getDialogue(dialogueId, { namespace: NAMESPACE });
   if (!dialogue) throw new Error(`Dialogue ${dialogueId} not found`);
 
   await dialogue.loadMessages({ order: "asc" });
@@ -268,7 +240,7 @@ async function invocation2(dialogueId: string) {
   console.log("---\n");
 
   // Cleanup
-  await db.deleteDialogue(dialogueId);
+  await db.deleteDialogue(dialogueId, { namespace: NAMESPACE });
   console.log("Cleaned up. Done!");
 }
 

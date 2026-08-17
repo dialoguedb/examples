@@ -47,6 +47,7 @@ npm run advanced:2      # Run only invocation 2 (needs DIALOGUE_ID env)
 - **Invocation 1**: Multi-tool agent loop — Llama calls tools, every message (including `tool_calls` and `tool` role messages) is persisted to DialogueDB
 - **Invocation 2**: Cold resume — loads the full conversation from DialogueDB, reconstructs the exact message sequence including tool call history, sends a follow-up with full prior context
 - Token usage tracking in message metadata
+- Every dialogue scoped to a namespace, so per-user isolation works out of the box
 
 ### Running as separate processes
 
@@ -63,6 +64,7 @@ DIALOGUE_ID=<id-from-above> npm run advanced:2
 Groq's API is stateless — every request needs the full message history. DialogueDB gives you:
 
 - **Cross-process persistence** — conversations survive restarts, deploys, cold starts
+- **Per-user isolation** — dialogues are scoped to a namespace; one user can never read another's history
 - **API access** — any service can read/query conversations
 - **Tool call storage** — assistant `tool_calls` and `tool` results persisted exactly as Groq expects them
 - **Metadata** — track token usage, costs, and custom data alongside messages
