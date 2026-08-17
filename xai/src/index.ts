@@ -28,7 +28,9 @@ if (!process.env.XAI_API_KEY) {
 
 const db = new DialogueDB({ apiKey: dialogueDbApiKey });
 const NAMESPACE = "user_demo";
-const model = xai("grok-4.20-0309-non-reasoning");
+// Override with XAI_MODEL if this id is unavailable to your key; list yours
+// with GET https://api.x.ai/v1/language-models.
+const model = xai(process.env.XAI_MODEL ?? "grok-4.20-0309-non-reasoning");
 
 /** One chat turn, exactly as a route handler does it. */
 async function runTurn(

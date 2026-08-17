@@ -72,8 +72,10 @@ another user's history.
 
 ## Notes
 
-- The model is `grok-4.20-0309-non-reasoning`. Any Grok chat model works; list
-  what your key can use with `GET https://api.x.ai/v1/language-models`.
+- The default model is `grok-4.20-0309-non-reasoning` (verified against the
+  live model list). If your key does not have it, set `XAI_MODEL` in `.env` to
+  any Grok chat model; list what your key can use with
+  `GET https://api.x.ai/v1/language-models`.
 - Swapping providers is a one-line change: this example and
   [`../vercel-ai-sdk/`](../vercel-ai-sdk/) differ only in the provider import
   and model id.
