@@ -1,17 +1,19 @@
 import "dotenv/config";
-import { streamText, convertToModelMessages, type UIMessage } from "ai";
-import { xai } from "@ai-sdk/xai";
+import OpenAI from "openai";
 import { DialogueDB } from "dialogue-db";
+import type { Dialogue } from "dialogue-db";
 
-import { toStoredMessages, loadUIMessages } from "./persist";
+import { toChatMessages, loadDialogue } from "./persist";
 
 /**
  * DialogueDB + xAI (Grok): persistent chat, end to end.
  *
- * This runs the exact server-side flow a Route Handler would, then reloads the
- * conversation cold and continues it, proving that chat history survives a
- * restart when it lives in DialogueDB. The persistence layer is identical to
- * the vercel-ai-sdk example: only the model provider changed.
+ * xAI's API is stateless: every call takes the full message history. This runs
+ * a chat turn, reloads the conversation cold from DialogueDB (as a fresh
+ * process would), and continues it — proving the history survives a restart.
+ *
+ * xAI has no official JS SDK; its documented JS path is the OpenAI SDK pointed
+ * at https://api.x.ai/v1, which is what this example does.
  */
 
 const dialogueDbApiKey = process.env.DIALOGUE_DB_API_KEY;
@@ -27,92 +29,66 @@ if (!process.env.XAI_API_KEY) {
 }
 
 const db = new DialogueDB({ apiKey: dialogueDbApiKey });
+const xai = new OpenAI({
+  apiKey: process.env.XAI_API_KEY,
+  baseURL: "https://api.x.ai/v1",
+});
+
 const NAMESPACE = "user_demo";
 // Override with XAI_MODEL if this id is unavailable to your key; list yours
 // with GET https://api.x.ai/v1/language-models.
-const model = xai(process.env.XAI_MODEL ?? "grok-4.20-0309-non-reasoning");
+const MODEL = process.env.XAI_MODEL ?? "grok-4.20-0309-non-reasoning";
 
-/** One chat turn, exactly as a route handler does it. */
-async function runTurn(
-  dialogueId: string,
-  history: UIMessage[],
-  userText: string,
-): Promise<UIMessage[]> {
-  const userMessage: UIMessage = {
-    id: `local-${history.length}`,
-    role: "user",
-    parts: [{ type: "text", text: userText }],
-  };
-  const incoming = [...history, userMessage];
+/** One chat turn: persist the user message, run Grok, persist the reply. */
+async function runTurn(dialogue: Dialogue, userText: string): Promise<string> {
+  await dialogue.saveMessage({ role: "user", content: userText });
 
-  const dialogue = await db.getOrCreateDialogue({
-    id: dialogueId,
-    namespace: NAMESPACE,
+  const response = await xai.chat.completions.create({
+    model: MODEL,
+    max_tokens: 256,
+    messages: toChatMessages(dialogue),
   });
+  const reply = response.choices[0].message.content ?? "";
 
-  // 1. Persist the incoming user turn.
-  await dialogue.saveMessages(toStoredMessages([userMessage]));
-
-  // 2. Run Grok on the full history. convertToModelMessages is async in v7.
-  const result = streamText({
-    model,
-    messages: await convertToModelMessages(incoming),
-  });
-
-  // 3. toUIMessageStreamResponse hands the full UI message list to onFinish.
-  let finalMessages: UIMessage[] = [];
-  const response = result.toUIMessageStreamResponse({
-    originalMessages: incoming,
-    onFinish: ({ messages }) => {
-      finalMessages = messages;
-    },
-  });
-  await response.text(); // drain the stream so onFinish runs
-
-  // 4. Persist the new assistant message(s): everything past the original list.
-  await dialogue.saveMessages(
-    toStoredMessages(finalMessages.slice(incoming.length)),
-  );
-
-  return finalMessages;
-}
-
-function line(m: UIMessage): string {
-  const text = m.parts
-    .map((p) => (p.type === "text" ? p.text : `[${p.type}]`))
-    .join(" ")
-    .trim();
-  return `  ${m.role}: ${text.slice(0, 90)}`;
+  await dialogue.saveMessage({ role: "assistant", content: reply });
+  return reply;
 }
 
 async function main(): Promise<void> {
   const dialogueId = `xai-demo-${Date.now()}`;
   console.log(`Dialogue: ${dialogueId} (namespace: ${NAMESPACE})\n`);
 
+  const dialogue = await db.getOrCreateDialogue({
+    id: dialogueId,
+    namespace: NAMESPACE,
+  });
+
   console.log("Turn 1:");
-  const afterTurn1 = await runTurn(
-    dialogueId,
-    [],
+  const reply1 = await runTurn(
+    dialogue,
     "In one word, what does DialogueDB store?",
   );
-  console.log(afterTurn1.map(line).join("\n"), "\n");
+  console.log(`  user: In one word, what does DialogueDB store?`);
+  console.log(`  grok: ${reply1}\n`);
 
-  // Cold reload, as a fresh process or page load would do.
-  const reloaded = await loadUIMessages(db, dialogueId, NAMESPACE);
-  console.log("Reloaded from DialogueDB (ready to hand back to the UI):");
-  console.log(reloaded.map(line).join("\n"), "\n");
+  // Cold reload, as a fresh process would do. Nothing is reused from above.
+  const reloaded = await loadDialogue(db, dialogueId, NAMESPACE);
+  if (!reloaded) throw new Error("Dialogue not found after reload");
+  console.log(
+    `Reloaded from DialogueDB: ${reloaded.messages.length} messages\n`,
+  );
 
   console.log("Turn 2 (continued from the reloaded history):");
-  const afterTurn2 = await runTurn(
-    dialogueId,
+  const reply2 = await runTurn(
     reloaded,
     "And in one word, why does that matter?",
   );
-  console.log(afterTurn2.map(line).join("\n"));
+  console.log(`  user: And in one word, why does that matter?`);
+  console.log(`  grok: ${reply2}\n`);
 
   await db.deleteDialogue(dialogueId, { namespace: NAMESPACE });
   console.log(
-    "\nCleaned up. The conversation round-tripped through DialogueDB across a cold reload.",
+    "Cleaned up. The conversation round-tripped through DialogueDB across a cold reload.",
   );
 }
 

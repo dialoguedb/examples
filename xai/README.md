@@ -5,16 +5,12 @@ stateless: every call takes the full message history. DialogueDB is where that
 history lives between calls, so a conversation survives a cold restart, a
 deploy, or a new process, with no database to run.
 
-This example uses the AI SDK's [xAI provider](https://ai-sdk.dev/providers/ai-sdk-providers/xai)
-(`@ai-sdk/xai`) and runs the exact server-side flow a Route Handler would, then
-reloads the conversation cold and continues it, so you can watch the history
-round-trip.
+xAI has no official JS SDK; its documented JS path is the OpenAI SDK pointed at
+`https://api.x.ai/v1` (the API is OpenAI-compatible), which is what this example
+uses. The demo runs a chat turn, reloads the conversation cold from DialogueDB,
+and continues it, so you can watch the history round-trip.
 
-Requires `dialogue-db` >= 2.0.1 (message content is stored as structured parts).
-
-> **Also see:** [`../vercel-ai-sdk/`](../vercel-ai-sdk/) — the same integration
-> against OpenAI. [`src/persist.ts`](./src/persist.ts) is identical in both, on
-> purpose: the DialogueDB side does not change when the model provider does.
+Requires `dialogue-db` >= 2.0.1.
 
 ## Setup
 
@@ -40,30 +36,25 @@ the reloaded history, with the earlier turns still present.
 
 ## The idea
 
-A UI message is `{ id, role, parts }`. A DialogueDB message is
-`{ id, role, content }`. Store the `parts` array as `content` (DialogueDB keeps
-it structured, so text, tool calls, and reasoning survive) and map back on load.
-DialogueDB owns the message id, which stays stable across reloads. That mapping
-is the whole integration; see [`src/persist.ts`](./src/persist.ts).
+A DialogueDB message is `{ role, content }`. xAI's chat API takes the same
+shape, so the whole integration is: save each turn as a row, reload the rows in
+order, hand them straight back to the API. See
+[`src/persist.ts`](./src/persist.ts).
 
 ```ts
-export function toStoredMessages(messages: UIMessage[]) {
-  return messages.map((m) => ({ role: m.role, content: m.parts }));
+export function toChatMessages(dialogue: Dialogue) {
+  return dialogue.messages.map((m) =>
+    m.role === "user"
+      ? { role: "user", content: String(m.content) }
+      : { role: "assistant", content: String(m.content) },
+  );
 }
 
-// On load, validateUIMessages parses the stored rows back into typed UIMessages,
-// so there is no casting at the storage boundary.
-export async function loadUIMessages(db, id, namespace) {
+export async function loadDialogue(db, id, namespace) {
   const dialogue = await db.getDialogue(id, { namespace });
-  if (!dialogue) return [];
+  if (!dialogue) return null;
   await dialogue.loadMessages({ order: "asc" });
-  return validateUIMessages({
-    messages: dialogue.messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      parts: m.content,
-    })),
-  });
+  return dialogue;
 }
 ```
 
@@ -76,6 +67,6 @@ another user's history.
   live model list). If your key does not have it, set `XAI_MODEL` in `.env` to
   any Grok chat model; list what your key can use with
   `GET https://api.x.ai/v1/language-models`.
-- Swapping providers is a one-line change: this example and
-  [`../vercel-ai-sdk/`](../vercel-ai-sdk/) differ only in the provider import
-  and model id.
+- Same concept as [`../vercel-ai-sdk/`](../vercel-ai-sdk/) (turn, cold reload,
+  continue), but integrated directly against the xAI API rather than through a
+  framework.

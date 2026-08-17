@@ -1,41 +1,34 @@
-import { validateUIMessages, type UIMessage } from "ai";
-import type { DialogueDB, MessageContent } from "dialogue-db";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import type { Dialogue, DialogueDB } from "dialogue-db";
 
 /**
- * The bridge between the Vercel AI SDK's UI messages and DialogueDB.
+ * The bridge between DialogueDB and xAI's chat completions.
  *
- * A useChat UIMessage is { id, role, parts }. A DialogueDB message is
- * { id, role, content }. We store the parts array as structured content, which
- * dialogue-db accepts since 2.0.1, so text, tool calls, and reasoning round-trip
- * unchanged. DialogueDB owns the message id: it is stable across reloads, which
- * is all useChat needs for React keys.
+ * A DialogueDB message is { role, content }. xAI's API (OpenAI-compatible)
+ * takes the same shape, so the mapping is direct: save each turn as a row,
+ * reload the rows in order, and hand them straight back to the API. DialogueDB
+ * is the source of truth for the conversation; the process holds nothing.
  */
 
-export function toStoredMessages(
-  messages: UIMessage[],
-): { role: string; content: MessageContent }[] {
-  return messages.map((message) => ({
-    role: message.role,
-    content: message.parts,
-  }));
+/** Convert a loaded dialogue to the message array the xAI API takes. */
+export function toChatMessages(
+  dialogue: Dialogue,
+): ChatCompletionMessageParam[] {
+  return dialogue.messages.map((m) =>
+    m.role === "user"
+      ? { role: "user", content: String(m.content) }
+      : { role: "assistant", content: String(m.content) },
+  );
 }
 
-/** Load a conversation from DialogueDB as UI messages ready for useChat. */
-export async function loadUIMessages(
+/** Load a conversation from DialogueDB with its messages in order. */
+export async function loadDialogue(
   db: DialogueDB,
   id: string,
   namespace: string,
-): Promise<UIMessage[]> {
+): Promise<Dialogue | null> {
   const dialogue = await db.getDialogue(id, { namespace });
-  if (!dialogue) return [];
+  if (!dialogue) return null;
   await dialogue.loadMessages({ order: "asc" });
-  // validateUIMessages parses the stored rows back into typed UIMessages against
-  // the SDK's own schema, so no casting is needed at the storage boundary.
-  return validateUIMessages({
-    messages: dialogue.messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      parts: m.content,
-    })),
-  });
+  return dialogue;
 }

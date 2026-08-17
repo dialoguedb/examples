@@ -8,10 +8,9 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@ai-sdk/xai": "^4.0.40",
-    "ai": "^7.0.11",
     "dialogue-db": "^2.0.1",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "openai": "^7.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
