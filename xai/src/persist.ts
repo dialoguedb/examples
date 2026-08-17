@@ -14,11 +14,17 @@ import type { Dialogue, DialogueDB } from "dialogue-db";
 export function toChatMessages(
   dialogue: Dialogue,
 ): ChatCompletionMessageParam[] {
-  return dialogue.messages.map((m) =>
-    m.role === "user"
-      ? { role: "user", content: String(m.content) }
-      : { role: "assistant", content: String(m.content) },
-  );
+  return dialogue.messages.map((m): ChatCompletionMessageParam => {
+    const content = String(m.content);
+    switch (m.role) {
+      case "user":
+        return { role: "user", content };
+      case "system":
+        return { role: "system", content };
+      default:
+        return { role: "assistant", content };
+    }
+  });
 }
 
 /** Load a conversation from DialogueDB with its messages in order. */
