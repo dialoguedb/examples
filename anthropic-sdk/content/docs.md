@@ -45,7 +45,7 @@ await dialogue.saveMessage({
 
 // Call Claude
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
   messages: dialogue.messages.map((m) => ({
     role: m.role as "user" | "assistant",
@@ -78,7 +78,7 @@ const messages = resumed.messages.map((m) => ({
 
 // Continue the conversation
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
   messages,
 });
@@ -150,7 +150,7 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
 
   while (true) {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools,
@@ -267,7 +267,7 @@ Use it when calling the API from a resumed dialogue:
 
 ```typescript
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 4096,
   system: [
     {

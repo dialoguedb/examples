@@ -58,7 +58,7 @@ await dialogue.saveMessage({
 });
 
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
   messages: dialogue.messages.map((m) => ({
     role: m.role as "user" | "assistant",
@@ -96,7 +96,7 @@ await resumed.saveMessage({
 });
 
 const followUp = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
   messages: resumed.messages.map((m) => ({
     role: m.role as "user" | "assistant",
@@ -124,7 +124,7 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
     }));
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools,
