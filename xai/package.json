@@ -1,0 +1,22 @@
+{
+  "name": "dialoguedb-xai-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "agent-with-tools": "npx tsx src/agent-with-tools.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.7",
+    "openai": "^7.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

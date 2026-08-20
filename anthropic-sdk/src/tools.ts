@@ -44,6 +44,90 @@ export const tools: Anthropic.Tool[] = [
   },
 ];
 
+/** Read a string argument without asserting on the model's input. */
+function readString(input: Record<string, unknown>, key: string): string {
+  const value = input[key];
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * Evaluate a basic arithmetic expression.
+ *
+ * A recursive-descent parser rather than `new Function()` or `eval()`: the
+ * expression comes from the model, so it must never be executed as code. Only
+ * numbers, + - * / %, parentheses, and unary signs are accepted; anything else
+ * throws.
+ */
+function evaluateArithmetic(expression: string): number {
+  let index = 0;
+
+  const skipSpace = (): void => {
+    while (index < expression.length && /\s/.test(expression[index])) index += 1;
+  };
+
+  const parseFactor = (): number => {
+    skipSpace();
+    const char = expression[index];
+
+    if (char === "+") {
+      index += 1;
+      return parseFactor();
+    }
+    if (char === "-") {
+      index += 1;
+      return -parseFactor();
+    }
+    if (char === "(") {
+      index += 1;
+      const inner = parseSum();
+      skipSpace();
+      if (expression[index] !== ")") throw new Error("Unbalanced parentheses");
+      index += 1;
+      return inner;
+    }
+
+    const start = index;
+    while (index < expression.length && /[0-9.]/.test(expression[index])) index += 1;
+    if (start === index) throw new Error(`Unexpected character at position ${index}`);
+
+    const value = Number(expression.slice(start, index));
+    if (!Number.isFinite(value)) throw new Error("Invalid number");
+    return value;
+  };
+
+  const parseProduct = (): number => {
+    let value = parseFactor();
+    for (;;) {
+      skipSpace();
+      const operator = expression[index];
+      if (operator !== "*" && operator !== "/" && operator !== "%") return value;
+      index += 1;
+      const right = parseFactor();
+      if (right === 0 && operator !== "*") throw new Error("Division by zero");
+      value = operator === "*" ? value * right : operator === "/" ? value / right : value % right;
+    }
+  };
+
+  const parseSum = (): number => {
+    let value = parseProduct();
+    for (;;) {
+      skipSpace();
+      const operator = expression[index];
+      if (operator !== "+" && operator !== "-") return value;
+      index += 1;
+      const right = parseProduct();
+      value = operator === "+" ? value + right : value - right;
+    }
+  };
+
+  const result = parseSum();
+  skipSpace();
+  if (index !== expression.length) {
+    throw new Error(`Unexpected input at position ${index}`);
+  }
+  return result;
+}
+
 /** Execute a tool call and return the result as a string. */
 export function executeTool(
   name: string,
@@ -57,7 +141,7 @@ export function executeTool(
         london: 52,
         tokyo: 58,
       };
-      const location = (input.location as string).toLowerCase();
+      const location = readString(input, "location").toLowerCase();
       const temp = temps[location] ?? 70;
       return JSON.stringify({
         location: input.location,
@@ -68,15 +152,12 @@ export function executeTool(
     }
 
     case "calculate": {
+      const expression = readString(input, "expression");
       try {
-        const result = Function(
-          `"use strict"; return (${input.expression})`
-        )();
-        return JSON.stringify({ expression: input.expression, result });
-      } catch {
-        return JSON.stringify({
-          error: `Could not evaluate: ${input.expression}`,
-        });
+        return JSON.stringify({ expression, result: evaluateArithmetic(expression) });
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : "invalid expression";
+        return JSON.stringify({ error: `Could not evaluate "${expression}": ${reason}` });
       }
     }
 
