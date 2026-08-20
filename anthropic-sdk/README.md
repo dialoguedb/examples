@@ -59,7 +59,6 @@ DIALOGUE_ID=<id-from-above> npm run advanced:2
 - `toMessageParams(dialogue)` — stored messages to `Anthropic.MessageParam[]`
 - `toSystemPrompt(dialogue)` — stored `system` messages, joined
 - `withCacheHint(messages)` — a prompt-cache breakpoint on the final block
-- `loadDialogue(db, id, namespace)` — get-or-create, then load oldest first
 
 Two details matter here.
 

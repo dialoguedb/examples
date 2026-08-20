@@ -20,16 +20,11 @@ npm install dialogue-db @anthropic-ai/sdk
 
 ```typescript
 import Anthropic from "@anthropic-ai/sdk";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
+import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
 
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
-});
-
 const anthropic = new Anthropic();
-const db = new DialogueDB();
+const db = new DialogueDB({ apiKey: process.env.DIALOGUE_DB_API_KEY! });
 ```
 
 ### 2. Create a Dialogue and Save Messages
@@ -361,9 +356,8 @@ dialogue.saveState(state)      // Save conversation-level state
 
 ```bash
 # .env
-ANTHROPIC_API_KEY=sk-ant-...              # Anthropic (auto-read by SDK)
-DIALOGUEDB_API_KEY=your-dialoguedb-key    # DialogueDB
-DIALOGUEDB_ENDPOINT=https://api.dialoguedb.com
+ANTHROPIC_API_KEY=sk-ant-...                 # Anthropic (auto-read by SDK)
+DIALOGUE_DB_API_KEY=your-dialoguedb-key      # DialogueDB
 ```
 
 ## Examples

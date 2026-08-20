@@ -30,14 +30,10 @@ npm install dialogue-db @anthropic-ai/sdk
 
 ```typescript
 import Anthropic from "@anthropic-ai/sdk";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
-
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-});
+import { DialogueDB } from "dialogue-db";
 
 const anthropic = new Anthropic();
-const db = new DialogueDB();
+const db = new DialogueDB({ apiKey: process.env.DIALOGUE_DB_API_KEY! });
 ```
 
 Two SDKs. One for AI, one for persistence. They don't depend on each other — they compose.
