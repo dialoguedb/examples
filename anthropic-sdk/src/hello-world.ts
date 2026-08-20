@@ -11,41 +11,35 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
+import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
+import { toMessageParams, toSystemPrompt } from "./persist.js";
 
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
-});
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
 
 const anthropic = new Anthropic();
-const db = new DialogueDB();
-const MODEL = "claude-sonnet-4-20250514";
+const db = new DialogueDB({ apiKey: requireEnv("DIALOGUE_DB_API_KEY") });
+const MODEL = "claude-sonnet-4-6";
 
 /** Send a message array to Claude, return the text response. */
 async function chat(
-  messages: Array<{ role: "user" | "assistant"; content: string }>
+  messages: Anthropic.MessageParam[],
+  system?: string
 ): Promise<string> {
   const response = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 1024,
+    ...(system ? { system } : {}),
     messages,
   });
   return response.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("");
-}
-
-/** Convert dialogue messages to Anthropic format. */
-function toAnthropicMessages(
-  dialogue: InstanceType<typeof import("dialogue-db").Dialogue>
-) {
-  return dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as string,
-  }));
 }
 
 async function main() {
@@ -61,7 +55,7 @@ async function main() {
     content:
       "Hi! My name is Alice and I'm building a weather app for surfers. What tech stack would you recommend?",
   });
-  const reply1 = await chat(toAnthropicMessages(dialogue));
+  const reply1 = await chat(toMessageParams(dialogue), toSystemPrompt(dialogue));
   await dialogue.saveMessage({ role: "assistant", content: reply1 });
   console.log(`Exchange 1 - Claude: ${reply1.slice(0, 150)}...\n`);
 
@@ -71,7 +65,7 @@ async function main() {
     content:
       "Good ideas. I also want tide predictions and wave height data. What APIs should I look at?",
   });
-  const reply2 = await chat(toAnthropicMessages(dialogue));
+  const reply2 = await chat(toMessageParams(dialogue), toSystemPrompt(dialogue));
   await dialogue.saveMessage({ role: "assistant", content: reply2 });
   console.log(`Exchange 2 - Claude: ${reply2.slice(0, 150)}...\n`);
 
@@ -88,7 +82,7 @@ async function main() {
     content:
       "Quick recap: what's my name, what am I building, and what specific features did we discuss?",
   });
-  const reply3 = await chat(toAnthropicMessages(resumed));
+  const reply3 = await chat(toMessageParams(resumed), toSystemPrompt(resumed));
   await resumed.saveMessage({ role: "assistant", content: reply3 });
   console.log(`Exchange 3 (after restart) - Claude:\n${reply3}\n`);
 
