@@ -63,6 +63,11 @@ async function functionCallingTurn(dialogueId: string, input: string): Promise<v
   // The model's turn is its parts array. Store it as structured content so the
   // functionCall survives verbatim for the next request.
   const modelParts = first.candidates?.[0]?.content?.parts ?? [];
+  if (modelParts.length === 0) {
+    // Storing an empty turn here would leave the functionResponse below with no
+    // functionCall to answer, which Gemini rejects on the next request.
+    throw new Error("The model asked for tool calls but returned no parts to store.");
+  }
   await dialogue.saveMessage({
     role: "assistant",
     content: modelParts,
@@ -109,7 +114,9 @@ async function crossSdkTurn(dialogueId: string): Promise<void> {
     contents: toGeminiContents(reloaded),
     config: { maxOutputTokens: 120 },
   });
-  console.log(`Gemini read the foreign blocks: ${(response.text ?? "").trim()}`);
+  const answer = response.text ?? "";
+  await reloaded.saveMessage({ role: "assistant", content: answer });
+  console.log(`Gemini read the foreign blocks: ${answer.trim()}`);
 }
 
 async function main(): Promise<void> {
