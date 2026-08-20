@@ -85,7 +85,7 @@ async function functionCallingTurn(dialogueId: string, input: string): Promise<v
     config: { tools: [{ functionDeclarations: [getWeather] }], maxOutputTokens: 200 },
   });
   const answer = final.text ?? "";
-  await dialogue.saveMessage({ role: "assistant", content: answer });
+  await reloaded.saveMessage({ role: "assistant", content: answer });
   console.log(`Gemini: ${answer.trim()}`);
 }
 

@@ -24,9 +24,18 @@ function requireEnv(name: string): string {
 const ai = new GoogleGenAI({ apiKey: requireEnv("GEMINI_API_KEY") });
 const db = new DialogueDB({ apiKey: requireEnv("DIALOGUE_DB_API_KEY") });
 
-/** One turn: persist the user message, run Gemini, persist the reply. */
-async function runTurn(dialogueId: string, input: string): Promise<string> {
-  const dialogue = await loadDialogue(db, dialogueId, NAMESPACE);
+/**
+ * One turn: persist the user message, run Gemini, persist the reply.
+ *
+ * The client is a parameter so the turn after the restart can be driven by a
+ * genuinely separate DialogueDB instance.
+ */
+async function runTurn(
+  client: DialogueDB,
+  dialogueId: string,
+  input: string,
+): Promise<string> {
+  const dialogue = await loadDialogue(client, dialogueId, NAMESPACE);
   await dialogue.saveMessage({ role: "user", content: input });
 
   const response = await ai.models.generateContent({
@@ -61,7 +70,7 @@ async function main(): Promise<void> {
   await created.saveMessage({ role: "system", content: "Answer in one short sentence." });
   console.log(`Created dialogue: ${created.id}\n`);
 
-  const first = await runTurn(dialogueId, "I'm deploying to eu-west-2 tonight. Acknowledge briefly.");
+  const first = await runTurn(db, dialogueId, "I'm deploying to eu-west-2 tonight. Acknowledge briefly.");
   console.log(`User: I'm deploying to eu-west-2 tonight.\nGemini: ${first.trim()}\n`);
 
   // Cold restart: a brand new client holding nothing in memory.
@@ -70,13 +79,14 @@ async function main(): Promise<void> {
   const resumed = await loadDialogue(cold, dialogueId, NAMESPACE);
   console.log(`Loaded ${resumed.messages.length} messages from DialogueDB\n`);
 
-  const second = await runTurn(dialogueId, "Which region did I say?");
+  // Everything from here on goes through the cold client, not the original.
+  const second = await runTurn(cold, dialogueId, "Which region did I say?");
   console.log(`User: Which region did I say?\nGemini: ${second.trim()}\n`);
 
   const remembered = second.toLowerCase().includes("eu-west-2");
   console.log(remembered ? "Context survived the restart." : "Context was lost.");
 
-  await db.deleteDialogue(dialogueId, { namespace: NAMESPACE });
+  await cold.deleteDialogue(dialogueId, { namespace: NAMESPACE });
   console.log("Cleaned up the demo dialogue.");
 }
 
