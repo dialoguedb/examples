@@ -32,7 +32,10 @@ function isGeminiPart(value: unknown): value is Part {
   return GEMINI_PART_KEYS.some((key) => key in value);
 }
 
-function toPart(value: Record<string, unknown>): Part {
+function toPart(value: unknown): Part {
+  // MessageContent is typed as objects, but the stored JSON is whatever a
+  // previous writer put there, so a bare string or a nested array is possible.
+  if (typeof value === "string") return { text: value };
   if (isGeminiPart(value)) return value;
   return { text: JSON.stringify(value) };
 }

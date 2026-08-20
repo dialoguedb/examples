@@ -13,16 +13,11 @@
 import { GoogleGenAI, type FunctionDeclaration, type Part } from "@google/genai";
 import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
+import { requireEnv } from "./env.js";
 import { loadDialogue, toGeminiContents } from "./persist.js";
 
 const MODEL = "gemini-3.5-flash-lite";
 const NAMESPACE = "advanced";
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
-  return value;
-}
 
 const ai = new GoogleGenAI({ apiKey: requireEnv("GEMINI_API_KEY") });
 const db = new DialogueDB({ apiKey: requireEnv("DIALOGUE_DB_API_KEY") });
