@@ -26,7 +26,10 @@ setGlobalConfig({
   endpoint: process.env.DIALOGUEDB_ENDPOINT!,
 });
 
-const MODEL = process.env.MODEL ?? "claude-sonnet-4-20250514";
+// @langchain/anthropic 0.3.x only skips its topP/topK = -1 defaults for a
+// fixed list of models, and the API rejects top_p: -1 on anything newer,
+// so this stays on a model that library version recognises.
+const MODEL = process.env.MODEL ?? "claude-sonnet-4-5-20250929";
 const db = new DialogueDB();
 
 // -- Mock tools (replace with real implementations) --
@@ -71,6 +74,26 @@ const calculatorTool = tool(
 const tools = [weatherTool, calculatorTool];
 
 /** Create an agent executor wired to a DialogueChatHistory. */
+/**
+ * AgentExecutor returns either a plain string or an array of content blocks,
+ * depending on the model. Passing the array straight into AIMessage leaves
+ * content undefined, which DialogueDB then rejects as a missing field, so
+ * flatten it to text first.
+ */
+function toText(output: unknown): string {
+  if (typeof output === "string") return output;
+  if (Array.isArray(output)) {
+    return output
+      .map((block) =>
+        typeof block === "object" && block !== null && "text" in block
+          ? String(block.text)
+          : "",
+      )
+      .join("");
+  }
+  return output === undefined || output === null ? "" : String(output);
+}
+
 function createAgent(history: DialogueChatHistory) {
   const llm = new ChatAnthropic({ model: MODEL, maxTokens: 4096 });
 
@@ -114,10 +137,10 @@ async function invocation1(): Promise<string> {
   // Persist the exchange to DialogueDB
   await history.addMessage(new (await import("@langchain/core/messages")).HumanMessage(input1));
   await history.addMessage(
-    new (await import("@langchain/core/messages")).AIMessage(result1.output as string)
+    new (await import("@langchain/core/messages")).AIMessage(toText(result1.output))
   );
 
-  console.log(`Claude: ${result1.output}\n`);
+  console.log(`Claude: ${toText(result1.output)}\n`);
 
   // Second query — builds on the first
   const input2 = "Based on that comparison, which city is better for an outdoor picnic today?";
@@ -128,10 +151,10 @@ async function invocation1(): Promise<string> {
 
   await history.addMessage(new (await import("@langchain/core/messages")).HumanMessage(input2));
   await history.addMessage(
-    new (await import("@langchain/core/messages")).AIMessage(result2.output as string)
+    new (await import("@langchain/core/messages")).AIMessage(toText(result2.output))
   );
 
-  console.log(`Claude: ${result2.output}\n`);
+  console.log(`Claude: ${toText(result2.output)}\n`);
 
   const dialogueId = history.getDialogueId()!;
   console.log(`--- Invocation 1 done. Dialogue ID: ${dialogueId} ---\n`);
@@ -164,13 +187,13 @@ async function invocation2(dialogueId: string) {
 
   await history.addMessage(new (await import("@langchain/core/messages")).HumanMessage(input));
   await history.addMessage(
-    new (await import("@langchain/core/messages")).AIMessage(result.output as string)
+    new (await import("@langchain/core/messages")).AIMessage(toText(result.output))
   );
 
-  console.log(`Claude (after restart): ${result.output}\n`);
+  console.log(`Claude (after restart): ${toText(result.output)}\n`);
 
   // Verify context preservation
-  const lower = (result.output as string).toLowerCase();
+  const lower = toText(result.output).toLowerCase();
   const remembered =
     (lower.includes("san francisco") || lower.includes("sf")) &&
     lower.includes("tokyo");

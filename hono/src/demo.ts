@@ -27,7 +27,7 @@ setGlobalConfig({
 });
 
 const anthropic = new Anthropic();
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 
 // ---------------------------------------------------------------------------
 // App factory — creates a fresh Hono app backed by DialogueDB.

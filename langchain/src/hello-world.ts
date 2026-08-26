@@ -23,7 +23,10 @@ setGlobalConfig({
   endpoint: process.env.DIALOGUEDB_ENDPOINT!,
 });
 
-const MODEL = process.env.MODEL ?? "claude-sonnet-4-20250514";
+// @langchain/anthropic 0.3.x only skips its topP/topK = -1 defaults for a
+// fixed list of models, and the API rejects top_p: -1 on anything newer,
+// so this stays on a model that library version recognises.
+const MODEL = process.env.MODEL ?? "claude-sonnet-4-5-20250929";
 
 async function main() {
   console.log("=== DialogueDB + LangChain: Hello World ===\n");
