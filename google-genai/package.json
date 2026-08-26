@@ -1,0 +1,22 @@
+{
+  "name": "dialoguedb-google-genai-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "advanced": "npx tsx src/advanced.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@google/genai": "^2.18.0",
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
