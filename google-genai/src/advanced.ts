@@ -10,7 +10,11 @@
  *    them instead of letting the request fail.
  */
 
-import { GoogleGenAI, type FunctionDeclaration, type Part } from "@google/genai";
+import {
+  GoogleGenAI,
+  type FunctionDeclaration,
+  type Part,
+} from "@google/genai";
 import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
 import { requireEnv } from "./env.js";
@@ -37,14 +41,20 @@ function lookupWeather(city: string): string {
   return `18C and overcast in ${city}`;
 }
 
-async function functionCallingTurn(dialogueId: string, input: string): Promise<void> {
+async function functionCallingTurn(
+  dialogueId: string,
+  input: string,
+): Promise<void> {
   const dialogue = await loadDialogue(db, dialogueId, NAMESPACE);
   await dialogue.saveMessage({ role: "user", content: input });
 
   const first = await ai.models.generateContent({
     model: MODEL,
     contents: toGeminiContents(dialogue),
-    config: { tools: [{ functionDeclarations: [getWeather] }], maxOutputTokens: 200 },
+    config: {
+      tools: [{ functionDeclarations: [getWeather] }],
+      maxOutputTokens: 200,
+    },
   });
 
   const calls = first.functionCalls ?? [];
@@ -61,7 +71,9 @@ async function functionCallingTurn(dialogueId: string, input: string): Promise<v
   if (modelParts.length === 0) {
     // Storing an empty turn here would leave the functionResponse below with no
     // functionCall to answer, which Gemini rejects on the next request.
-    throw new Error("The model asked for tool calls but returned no parts to store.");
+    throw new Error(
+      "The model asked for tool calls but returned no parts to store.",
+    );
   }
   await dialogue.saveMessage({
     role: "assistant",
@@ -82,7 +94,10 @@ async function functionCallingTurn(dialogueId: string, input: string): Promise<v
   const final = await ai.models.generateContent({
     model: MODEL,
     contents: toGeminiContents(reloaded),
-    config: { tools: [{ functionDeclarations: [getWeather] }], maxOutputTokens: 200 },
+    config: {
+      tools: [{ functionDeclarations: [getWeather] }],
+      maxOutputTokens: 200,
+    },
   });
   const answer = final.text ?? "";
   await reloaded.saveMessage({ role: "assistant", content: answer });
@@ -98,10 +113,18 @@ async function crossSdkTurn(dialogueId: string): Promise<void> {
     role: "assistant",
     content: [
       { type: "text", text: "I checked the deploy log earlier." },
-      { type: "tool_use", id: "toolu_1", name: "read_log", input: { path: "/var/log/deploy" } },
+      {
+        type: "tool_use",
+        id: "toolu_1",
+        name: "read_log",
+        input: { path: "/var/log/deploy" },
+      },
     ],
   });
-  await dialogue.saveMessage({ role: "user", content: "In one sentence, what did you check?" });
+  await dialogue.saveMessage({
+    role: "user",
+    content: "In one sentence, what did you check?",
+  });
 
   const reloaded = await loadDialogue(db, dialogueId, NAMESPACE);
   const response = await ai.models.generateContent({
