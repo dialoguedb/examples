@@ -15,19 +15,21 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
+import { DialogueDB } from "dialogue-db";
 import type { Dialogue } from "dialogue-db";
 import { tools, executeTool } from "./tools.js";
+import { toMessageParams, withCacheHint } from "./persist.js";
 import "dotenv/config";
 
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
-});
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
 
 const anthropic = new Anthropic();
-const db = new DialogueDB();
-const MODEL = "claude-sonnet-4-20250514";
+const db = new DialogueDB({ apiKey: requireEnv("DIALOGUE_DB_API_KEY") });
+const MODEL = "claude-sonnet-4-6";
 
 const SYSTEM_PROMPT =
   "You are a helpful assistant with access to tools. Use them when needed to answer questions accurately. Be concise.";
@@ -36,44 +38,12 @@ const SYSTEM_PROMPT =
 // Helpers
 // ---------------------------------------------------------------------------
 
-type AnthropicMessage = Anthropic.MessageParam;
-
-/** Convert DialogueDB messages to Anthropic API format. */
-function toAnthropicMessages(dialogue: Dialogue): AnthropicMessage[] {
-  return dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as Anthropic.MessageParam["content"],
-  }));
-}
-
-/**
- * Convert messages with a prompt-cache hint on the last message of the
- * existing conversation prefix (everything before the new user turn).
- */
-function toAnthropicMessagesWithCache(
-  dialogue: Dialogue
-): AnthropicMessage[] {
-  const messages = toAnthropicMessages(dialogue);
-
-  if (messages.length > 0) {
-    const last = messages[messages.length - 1];
-    if (typeof last.content === "string") {
-      last.content = [
-        {
-          type: "text",
-          text: last.content,
-          cache_control: { type: "ephemeral" },
-        },
-      ];
-    } else if (Array.isArray(last.content)) {
-      const lastBlock = last.content[last.content.length - 1] as unknown as {
-        cache_control?: { type: string };
-      };
-      lastBlock.cache_control = { type: "ephemeral" };
-    }
-  }
-
-  return messages;
+/** Tool input arrives as unknown; narrow it without asserting. */
+function toToolInput(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  const input: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) input[key] = entry;
+  return input;
 }
 
 /** Extract text from an Anthropic response. */
@@ -107,7 +77,7 @@ async function agentLoop(
   await dialogue.saveMessage({ role: "user", content: userMessage });
 
   while (true) {
-    const messages = toAnthropicMessages(dialogue);
+    const messages = toMessageParams(dialogue);
 
     const response = await anthropic.messages.create({
       model: MODEL,
@@ -120,7 +90,7 @@ async function agentLoop(
     // Persist the assistant turn with token usage
     await dialogue.saveMessage({
       role: "assistant",
-      content: response.content as Anthropic.MessageParam["content"],
+      content: response.content,
       metadata: {
         input_tokens: response.usage.input_tokens,
         output_tokens: response.usage.output_tokens,
@@ -143,13 +113,10 @@ async function agentLoop(
           console.log(
             `   [tool] ${block.name}(${JSON.stringify(block.input)})`
           );
-          const result = executeTool(
-            block.name,
-            block.input as Record<string, unknown>
-          );
+          const result = executeTool(block.name, toToolInput(block.input));
           console.log(`   [result] ${result}`);
           return {
-            type: "tool_result" as const,
+            type: "tool_result",
             tool_use_id: block.id,
             content: result,
           };
@@ -159,7 +126,7 @@ async function agentLoop(
       // Persist tool results as a user message
       await dialogue.saveMessage({
         role: "user",
-        content: toolResults as Anthropic.MessageParam["content"],
+        content: toolResults,
       });
     }
   }
@@ -220,7 +187,7 @@ async function invocation2(dialogueId: string) {
   console.log(`Loaded ${dialogue.messages.length} messages\n`);
 
   // Build messages with cache hints on the conversation prefix
-  const cachedMessages = toAnthropicMessagesWithCache(dialogue);
+  const cachedMessages = withCacheHint(toMessageParams(dialogue));
 
   // New follow-up question
   const followUp =
@@ -250,16 +217,12 @@ async function invocation2(dialogueId: string) {
 
   await dialogue.saveMessage({
     role: "assistant",
-    content: response.content as Anthropic.MessageParam["content"],
+    content: response.content,
     metadata: {
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
-      cache_creation_input_tokens:
-        (response.usage as unknown as Record<string, number>)
-          .cache_creation_input_tokens ?? 0,
-      cache_read_input_tokens:
-        (response.usage as unknown as Record<string, number>)
-          .cache_read_input_tokens ?? 0,
+      cache_creation_input_tokens: response.usage.cache_creation_input_tokens ?? 0,
+      cache_read_input_tokens: response.usage.cache_read_input_tokens ?? 0,
     },
   });
 
@@ -272,7 +235,7 @@ async function invocation2(dialogueId: string) {
     totalMessages: dialogue.messages.length,
   });
 
-  const cacheUsage = response.usage as unknown as Record<string, number>;
+  const cacheUsage = response.usage;
   console.log("--- Invocation 2 Summary ---");
   console.log(`Messages persisted: ${dialogue.messages.length}`);
   console.log(

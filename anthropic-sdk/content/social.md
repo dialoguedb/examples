@@ -26,11 +26,10 @@ The problem is that persisting AI conversations is harder than it looks:
 **Tweet 3:**
 We built DialogueDB to solve this. Managed persistence for AI conversations.
 
-The integration is two lines of setup:
+The integration is one line of setup:
 
 ```
-setGlobalConfig({ apiKey, endpoint });
-const db = new DialogueDB();
+const db = new DialogueDB({ apiKey });
 ```
 
 Then `saveMessage()` and `loadMessages()`. That's the whole API.

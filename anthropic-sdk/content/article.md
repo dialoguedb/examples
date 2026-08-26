@@ -30,14 +30,10 @@ npm install dialogue-db @anthropic-ai/sdk
 
 ```typescript
 import Anthropic from "@anthropic-ai/sdk";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
-
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-});
+import { DialogueDB } from "dialogue-db";
 
 const anthropic = new Anthropic();
-const db = new DialogueDB();
+const db = new DialogueDB({ apiKey: process.env.DIALOGUE_DB_API_KEY! });
 ```
 
 Two SDKs. One for AI, one for persistence. They don't depend on each other — they compose.
@@ -58,12 +54,9 @@ await dialogue.saveMessage({
 });
 
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
-  messages: dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as string,
-  })),
+  messages: toMessageParams(dialogue),
 });
 
 // Save Claude's response
@@ -96,12 +89,9 @@ await resumed.saveMessage({
 });
 
 const followUp = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
-  messages: resumed.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as string,
-  })),
+  messages: toMessageParams(resumed),
 });
 ```
 
@@ -118,13 +108,10 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
   await dialogue.saveMessage({ role: "user", content: userMessage });
 
   while (true) {
-    const messages = dialogue.messages.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content as Anthropic.MessageParam["content"],
-    }));
+    const messages = toMessageParams(dialogue);
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools,
@@ -134,7 +121,7 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
     // Save the assistant's response with token metadata
     await dialogue.saveMessage({
       role: "assistant",
-      content: response.content as Anthropic.MessageParam["content"],
+      content: response.content,
       metadata: {
         input_tokens: response.usage.input_tokens,
         output_tokens: response.usage.output_tokens,
@@ -153,13 +140,13 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
       const toolResults: Anthropic.ToolResultBlockParam[] = toolBlocks.map((block) => ({
         type: "tool_result" as const,
         tool_use_id: block.id,
-        content: executeTool(block.name, block.input as Record<string, unknown>),
+        content: executeTool(block.name, toToolInput(block.input)),
       }));
 
       // Tool results are persisted as a user message — exactly matching Anthropic's format
       await dialogue.saveMessage({
         role: "user",
-        content: toolResults as Anthropic.MessageParam["content"],
+        content: toolResults,
       });
     }
   }
@@ -198,26 +185,23 @@ function sumTokens(dialogue: Dialogue) {
 When resuming a conversation, you can add `cache_control` hints to avoid re-processing the entire conversation prefix:
 
 ```typescript
-function toAnthropicMessagesWithCache(dialogue: Dialogue): AnthropicMessage[] {
-  const messages = toAnthropicMessages(dialogue);
+function withCacheHint(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
+  if (messages.length === 0) return messages;
 
-  if (messages.length > 0) {
-    const last = messages[messages.length - 1];
-    if (typeof last.content === "string") {
-      last.content = [
-        {
-          type: "text",
-          text: last.content,
-          cache_control: { type: "ephemeral" },
-        },
-      ];
-    } else if (Array.isArray(last.content)) {
-      const lastBlock = last.content[last.content.length - 1];
-      lastBlock.cache_control = { type: "ephemeral" };
-    }
-  }
+  const last = messages[messages.length - 1];
+  const blocks: Anthropic.ContentBlockParam[] =
+    typeof last.content === "string"
+      ? [{ type: "text", text: last.content }]
+      : [...last.content];
 
-  return messages;
+  if (blocks.length === 0) return messages;
+
+  // New objects, not a write into the blocks the dialogue handed us.
+  const marked: Anthropic.ContentBlockParam[] = blocks.map((block, index) =>
+    index === blocks.length - 1 ? { ...block, cache_control: CACHE_CONTROL } : block,
+  );
+
+  return [...messages.slice(0, -1), { role: last.role, content: marked }];
 }
 ```
 

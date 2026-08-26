@@ -20,16 +20,11 @@ npm install dialogue-db @anthropic-ai/sdk
 
 ```typescript
 import Anthropic from "@anthropic-ai/sdk";
-import { DialogueDB, setGlobalConfig } from "dialogue-db";
+import { DialogueDB } from "dialogue-db";
 import "dotenv/config";
 
-setGlobalConfig({
-  apiKey: process.env.DIALOGUEDB_API_KEY!,
-  endpoint: process.env.DIALOGUEDB_ENDPOINT!,
-});
-
 const anthropic = new Anthropic();
-const db = new DialogueDB();
+const db = new DialogueDB({ apiKey: process.env.DIALOGUE_DB_API_KEY! });
 ```
 
 ### 2. Create a Dialogue and Save Messages
@@ -45,12 +40,9 @@ await dialogue.saveMessage({
 
 // Call Claude
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
-  messages: dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as string,
-  })),
+  messages: toMessageParams(dialogue),
 });
 
 // Save assistant response
@@ -71,14 +63,11 @@ if (!resumed) throw new Error("Dialogue not found");
 await resumed.loadMessages({ order: "asc" });
 
 // Messages are ready — reconstruct for the Anthropic API
-const messages = resumed.messages.map((m) => ({
-  role: m.role as "user" | "assistant",
-  content: m.content as string,
-}));
+const messages = toMessageParams(resumed);
 
 // Continue the conversation
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
   messages,
 });
@@ -112,11 +101,17 @@ console.log(dialogue.messages[0].content);
 A helper to convert DialogueDB messages to the Anthropic format:
 
 ```typescript
-function toAnthropicMessages(dialogue: Dialogue): Anthropic.MessageParam[] {
-  return dialogue.messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content as Anthropic.MessageParam["content"],
-  }));
+// The API only accepts "user" and "assistant" here, and rejects a system
+// message outright, so system prompts are pulled out separately. Structured
+// content is passed through untouched, which is what lets tool_use and
+// tool_result blocks survive a restart.
+function toMessageParams(dialogue: Dialogue): Anthropic.MessageParam[] {
+  return dialogue.messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content,
+    }));
 }
 ```
 
@@ -150,17 +145,17 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
 
   while (true) {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools,
-      messages: toAnthropicMessages(dialogue),
+      messages: toMessageParams(dialogue),
     });
 
     // Persist the assistant turn with token metadata
     await dialogue.saveMessage({
       role: "assistant",
-      content: response.content as Anthropic.MessageParam["content"],
+      content: response.content,
       metadata: {
         input_tokens: response.usage.input_tokens,
         output_tokens: response.usage.output_tokens,
@@ -180,14 +175,14 @@ async function agentLoop(dialogue: Dialogue, userMessage: string): Promise<strin
         (block) => ({
           type: "tool_result" as const,
           tool_use_id: block.id,
-          content: executeTool(block.name, block.input as Record<string, unknown>),
+          content: executeTool(block.name, toToolInput(block.input)),
         })
       );
 
       // Persist tool results
       await dialogue.saveMessage({
         role: "user",
-        content: toolResults as Anthropic.MessageParam["content"],
+        content: toolResults,
       });
     }
   }
@@ -240,26 +235,23 @@ function sumTokens(dialogue: Dialogue) {
 When resuming a conversation, use Anthropic's prompt caching to avoid re-processing the full history. Add a `cache_control` hint to the last message in the conversation prefix:
 
 ```typescript
-function toAnthropicMessagesWithCache(dialogue: Dialogue): Anthropic.MessageParam[] {
-  const messages = toAnthropicMessages(dialogue);
+function withCacheHint(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
+  if (messages.length === 0) return messages;
 
-  if (messages.length > 0) {
-    const last = messages[messages.length - 1];
-    if (typeof last.content === "string") {
-      last.content = [
-        {
-          type: "text",
-          text: last.content,
-          cache_control: { type: "ephemeral" },
-        },
-      ];
-    } else if (Array.isArray(last.content)) {
-      const lastBlock = last.content[last.content.length - 1] as Record<string, unknown>;
-      lastBlock.cache_control = { type: "ephemeral" };
-    }
-  }
+  const last = messages[messages.length - 1];
+  const blocks: Anthropic.ContentBlockParam[] =
+    typeof last.content === "string"
+      ? [{ type: "text", text: last.content }]
+      : [...last.content];
 
-  return messages;
+  if (blocks.length === 0) return messages;
+
+  // New objects, not a write into the blocks the dialogue handed us.
+  const marked: Anthropic.ContentBlockParam[] = blocks.map((block, index) =>
+    index === blocks.length - 1 ? { ...block, cache_control: CACHE_CONTROL } : block,
+  );
+
+  return [...messages.slice(0, -1), { role: last.role, content: marked }];
 }
 ```
 
@@ -267,7 +259,7 @@ Use it when calling the API from a resumed dialogue:
 
 ```typescript
 const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-sonnet-4-6",
   max_tokens: 4096,
   system: [
     {
@@ -277,7 +269,7 @@ const response = await anthropic.messages.create({
     },
   ],
   tools,
-  messages: toAnthropicMessagesWithCache(dialogue),
+  messages: withCacheHint(toMessageParams(dialogue)),
 });
 ```
 
@@ -364,9 +356,8 @@ dialogue.saveState(state)      // Save conversation-level state
 
 ```bash
 # .env
-ANTHROPIC_API_KEY=sk-ant-...              # Anthropic (auto-read by SDK)
-DIALOGUEDB_API_KEY=your-dialoguedb-key    # DialogueDB
-DIALOGUEDB_ENDPOINT=https://api.dialoguedb.com
+ANTHROPIC_API_KEY=sk-ant-...                 # Anthropic (auto-read by SDK)
+DIALOGUE_DB_API_KEY=your-dialoguedb-key      # DialogueDB
 ```
 
 ## Examples

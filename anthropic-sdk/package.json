@@ -9,8 +9,8 @@
     "advanced:2": "npx tsx src/advanced.ts --invocation=2"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
-    "dialogue-db": "^1.0.10",
+    "@anthropic-ai/sdk": "^0.120.0",
+    "dialogue-db": "^2.0.1",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
