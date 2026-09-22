@@ -1,0 +1,23 @@
+{
+  "name": "dialoguedb-llamaindex-examples",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "advanced": "npx tsx src/advanced.ts",
+    "advanced:1": "npx tsx src/advanced.ts --invocation=1",
+    "advanced:2": "npx tsx src/advanced.ts --invocation=2"
+  },
+  "dependencies": {
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.0",
+    "llamaindex": "^0.12.0",
+    "@llamaindex/openai": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
