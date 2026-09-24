@@ -1,0 +1,19 @@
+{
+  "name": "dialoguedb-amazon-bedrock-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "advanced": "npx tsx src/advanced.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.700.0",
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
