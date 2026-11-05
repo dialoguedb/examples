@@ -1,0 +1,19 @@
+{
+  "name": "dialoguedb-tanstack-ai-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts"
+  },
+  "dependencies": {
+    "@tanstack/ai": "^1.2.0",
+    "@tanstack/ai-openai": "^1.1.1",
+    "dialogue-db": "^2.0.1",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
