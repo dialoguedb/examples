@@ -1,0 +1,21 @@
+{
+  "name": "dialoguedb-trpc-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "npx tsx src/demo.ts",
+    "dev": "npx tsx src/server.ts"
+  },
+  "dependencies": {
+    "@trpc/server": "^11.28.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "openai": "^5.8.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
