@@ -1,0 +1,20 @@
+{
+  "name": "dialoguedb-mastra-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello-world": "npx tsx src/hello-world.ts",
+    "persistent-agent": "npx tsx src/persistent-agent.ts"
+  },
+  "dependencies": {
+    "@mastra/core": "^1.85.0",
+    "dialogue-db": "^1.0.10",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
